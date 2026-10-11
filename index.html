@@ -1,185 +1,563 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Equipment Site Log</title>
-<style>
-:root{
-  --bg:#f5f6f8; --card:#ffffff; --text:#1a1d23; --muted:#6b7280; --border:#e2e4e8;
-  --accent:#2563eb; --accent-text:#ffffff; --ok:#16a34a; --ok-bg:#ecfdf3;
-}
-@media (prefers-color-scheme: dark){
-  :root{ --bg:#15171b; --card:#1e2126; --text:#e8eaed; --muted:#9aa0a6; --border:#2c2f36; --accent:#4f8cff; --accent-text:#0b1220; --ok:#34d399; --ok-bg:#0f2a1f; }
-}
-html,body{ height:100%; margin:0; }
-body{ background:var(--bg); color:var(--text); font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif; padding:20px 16px 40px; }
-.wrap{ max-width:640px; margin:0 auto; }
-h1{ font-size:1.25rem; margin:0 0 4px; }
-.sub{ color:var(--muted); font-size:.9rem; margin-bottom:18px; }
-.card{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px; margin-bottom:16px; }
-.code{ font-family:ui-monospace,Menlo,Consolas,monospace; font-weight:600; font-size:1.05rem; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:8px 12px; display:inline-block; }
-label{ display:block; font-size:.85rem; color:var(--muted); margin:14px 0 6px; }
-input, select{ width:100%; padding:11px 12px; border-radius:9px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:1rem; box-sizing:border-box; }
-button{ margin-top:18px; width:100%; padding:12px; border-radius:9px; border:none; background:var(--accent); color:var(--accent-text); font-size:1rem; font-weight:600; cursor:pointer; }
-button:disabled{ opacity:.5; cursor:default; }
-button.secondary{ background:transparent; border:1px solid var(--border); color:var(--text); font-weight:500; width:auto; margin-top:0; }
-.confirm{ background:var(--ok-bg); color:var(--ok); border-radius:10px; padding:12px 14px; font-size:.92rem; margin-top:14px; display:none; }
-table{ width:100%; border-collapse:collapse; font-size:.85rem; }
-th,td{ text-align:left; padding:8px 6px; border-bottom:1px solid var(--border); white-space:nowrap; }
-th{ color:var(--muted); font-weight:600; }
-.tablewrap{ overflow-x:auto; }
-.row{ display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
-.pill{ font-size:.75rem; color:var(--muted); }
-a.link{ color:var(--accent); text-decoration:none; font-size:.85rem; }
-.grid2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2563eb">
+  <title>Le Parfait | Equipment Site Log</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f5f6f8;
+      --card: #fff;
+      --text: #1a1d23;
+      --muted: #6b7280;
+      --border: #e2e4e8;
+      --accent: #2563eb;
+      --accent-text: #fff;
+      --ok: #166534;
+      --ok-bg: #dcfce7;
+      --error: #b91c1c;
+      --error-bg: #fee2e2;
+    }
+    @media(prefers-color-scheme: dark) {
+      :root {
+        --bg: #15171b;
+        --card: #1e2126;
+        --text: #e8eaed;
+        --muted: #a4aab4;
+        --border: #343942;
+        --accent: #4f8cff;
+        --accent-text: #0b1220;
+        --ok: #86efac;
+        --ok-bg: #103623;
+        --error: #fca5a5;
+        --error-bg: #451c22;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; margin: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      padding: 24px 16px 48px;
+    }
+    .wrap { max-width: 820px; margin: auto; }
+    h1 { font-size: 1.5rem; margin: 0 0 6px; }
+    .sub {
+      color: var(--muted);
+      font-size: .92rem;
+      margin: 0 0 20px;
+      line-height: 1.5;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px #00000008;
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .grid2 {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 14px;
+    }
+    .pill { color: var(--muted); font-size: .78rem; }
+    .code {
+      display: inline-block;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      font: 600 1rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 6px;
+    }
+    label {
+      display: block;
+      font-size: .87rem;
+      color: var(--muted);
+      margin: 16px 0 7px;
+    }
+    input, select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--bg);
+      color: var(--text);
+      font: inherit;
+      padding: 12px;
+    }
+    button {
+      border: 0;
+      border-radius: 9px;
+      background: var(--accent);
+      color: var(--accent-text);
+      font: 600 .95rem system-ui;
+      cursor: pointer;
+      padding: 12px 16px;
+    }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .full { width: 100%; margin-top: 18px; }
+    .secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .notice {
+      padding: 12px 14px;
+      margin-top: 14px;
+      border-radius: 9px;
+      font-size: .92rem;
+      line-height: 1.5;
+    }
+    .notice.ok { color: var(--ok); background: var(--ok-bg); }
+    .notice.error { color: var(--error); background: var(--error-bg); }
+    .notice.info { color: var(--text); background: var(--bg); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .tablewrap { overflow-x: auto; margin-top: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+    th, td {
+      text-align: left;
+      padding: 11px 10px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    th { color: var(--muted); font-weight: 600; }
+    td.empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 25px;
+    }
+    .footer {
+      font-size: .8rem;
+      color: var(--muted);
+      margin-top: 18px;
+    }
+    @media(max-width:480px) {
+      .grid2 { grid-template-columns: 1fr; }
+      .card { padding: 16px; }
+      .actions { width: 100%; }
+      .actions button { flex: 1; }
+    }
+  </style>
 </head>
 <body>
-<div class="wrap" id="app"></div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script>
-/* ============================================================
-   SET THIS after deploying the Apps Script (see apps-script.gs)
-   Deploy > New deployment > Web app > Execute as: Me,
-   Who has access: Anyone. Paste the resulting /exec URL below.
-   ============================================================ */
-const SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
-
-const NAMES = {
-  mopbuc:"Mop Bucket", vac:"Vacuum Cleaner", winkit:"Window Kit (Squeegee, Applicator, Bucket)",
-  scrub:"Scrubber", presswash:"Pressure Washer", polyvac:"Polyvac"
-};
-const STATES = {vic:"VIC", wa:"WA", nsw:"NSW", qld:"QLD", act:"ACT"};
-
-function parseCode(code){
-  const parts = code.toLowerCase().split("_");
-  if(parts.length < 3) return null;
-  const state = STATES[parts[0]]; const eqPrefix = parts[1]; const item = parts.slice(2).join("_");
-  if(!state || !NAMES[eqPrefix]) return null;
-  return {state, equipmentName: NAMES[eqPrefix], itemNumber: item, equipmentCode: code.toLowerCase()};
-}
-
-const app = document.getElementById("app");
-const params = new URLSearchParams(location.search);
-const rawCode = params.get("code");
-
-render();
-
-function render(){
-  if(rawCode){ renderScan(rawCode); } else { renderDashboard(); }
-}
-
-function renderScan(rawCode){
-  const info = parseCode(rawCode);
-  app.innerHTML = `
-    <h1>Log Equipment</h1>
-    <div class="sub">Scanned tag — confirm the site this item is at.</div>
-    <div class="card">
-      ${info ? `
-        <div class="pill">Equipment code</div>
-        <div class="code">${info.equipmentCode}</div>
-        <div class="grid2" style="margin-top:14px">
-          <div><div class="pill">State</div><div><strong>${info.state}</strong></div></div>
-          <div><div class="pill">Equipment</div><div><strong>${info.equipmentName}</strong></div></div>
-        </div>
-        <label for="site">Site name</label>
-        <input id="site" list="siteList" placeholder="e.g. Kealba Hotel" autocomplete="off">
-        <datalist id="siteList"></datalist>
-        <button id="submitBtn">Submit</button>
-        <div class="confirm" id="confirm"></div>
-      ` : `<div style="color:var(--muted)">This QR code isn't a recognised equipment code (${rawCode}).</div>`}
-    </div>
-    <div class="row"><a class="link" href="${location.pathname}">← View all logged entries</a></div>
-  `;
-  if(!info) return;
-  loadSiteSuggestions();
-  document.getElementById("submitBtn").addEventListener("click", async () => {
-    const site = document.getElementById("site").value.trim();
-    const btn = document.getElementById("submitBtn");
-    if(!site){ document.getElementById("site").focus(); return; }
-    btn.disabled = true; btn.textContent = "Submitting…";
-    try{
-      await fetch(SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" }, // avoids CORS preflight on Apps Script
-        body: JSON.stringify({
-          state: info.state, site, equipmentName: info.equipmentName,
-          equipmentCode: info.equipmentCode, timestamp: new Date().toISOString()
-        })
-      });
-      showConfirm(`Logged ${info.equipmentCode} at "${site}".`, true);
-      btn.textContent = "Submit"; btn.disabled = false;
-    }catch(e){
-      showConfirm("Couldn't save — check your connection and try again.", false);
-      btn.textContent = "Submit"; btn.disabled = false;
-    }
-  });
-}
-
-function showConfirm(msg, ok){
-  const el = document.getElementById("confirm");
-  el.style.display = "block";
-  el.style.background = ok ? "var(--ok-bg)" : "#3a1d1f";
-  el.style.color = ok ? "var(--ok)" : "#f87171";
-  el.textContent = msg;
-}
-
-async function loadSiteSuggestions(){
-  try{
-    const res = await fetch(`${SCRIPT_URL}?action=sites`);
-    const data = await res.json();
-    document.getElementById("siteList").innerHTML = (data.sites || []).map(s=>`<option value="${s}">`).join("");
-  }catch(e){}
-}
-
-async function renderDashboard(){
-  const SAMPLE_ROW = { state:"VIC", site:"Kealba Hotel", equipmentName:"Mop Bucket", equipmentCode:"vic_mopbuc_001", timestamp:new Date().toISOString() };
-  app.innerHTML = `
+  <main class="wrap" id="app">
     <h1>Equipment Site Log</h1>
-    <div class="card">
-      <div class="row">
-        <div class="pill" id="count">Loading…</div>
-      </div>
-      <div class="tablewrap" style="margin-top:12px">
-        <table>
-          <thead><tr><th>State</th><th>Site Name</th><th>Equipment Name</th><th>Equipment Code</th><th>Logged At</th></tr></thead>
-          <tbody id="rows">
-            <tr style="opacity:.6">
-              <td>${SAMPLE_ROW.state}</td><td>${SAMPLE_ROW.site}</td><td>${SAMPLE_ROW.equipmentName}</td>
-              <td>${SAMPLE_ROW.equipmentCode}</td><td>${new Date(SAMPLE_ROW.timestamp).toLocaleString()} (sample)</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <button id="exportBtn" style="margin-top:16px">Submit</button>
-    </div>
-  `;
-  let latest = [];
-  try{
-    const res = await fetch(`${SCRIPT_URL}?action=logs`);
-    const data = await res.json();
-    latest = data.rows || [];
-    document.getElementById("count").textContent = latest.length + " entries";
-    const sampleRowHtml = `<tr style="opacity:.6">
-      <td>${SAMPLE_ROW.state}</td><td>${SAMPLE_ROW.site}</td><td>${SAMPLE_ROW.equipmentName}</td>
-      <td>${SAMPLE_ROW.equipmentCode}</td><td>${new Date(SAMPLE_ROW.timestamp).toLocaleString()} (sample)</td>
-    </tr>`;
-    document.getElementById("rows").innerHTML = sampleRowHtml + latest.map(r=>`
-      <tr><td>${r.state}</td><td>${r.site}</td><td>${r.equipmentName}</td><td>${r.equipmentCode}</td>
-      <td>${new Date(r.timestamp).toLocaleString()}</td></tr>`).join("");
-  }catch(e){
-    document.getElementById("count").textContent = "Couldn't load entries.";
-  }
-  document.getElementById("exportBtn").addEventListener("click", () => {
-    const data = latest.map(r=>({State:r.state, "Site Name":r.site, "Equipment Name":r.equipmentName, "Equipment Code":r.equipmentCode, "Logged At":new Date(r.timestamp).toLocaleString()}));
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Equipment Log");
-    XLSX.writeFile(wb, "equipment_site_log.xlsx");
-  });
-}
-</script>
+    <p class="sub">Loading…</p>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+  <script>
+    "use strict";
+
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-ywy1Zqj0x8dXs35ry09gd6G5p7VhUMQYWKmTvOb4HnrpO19B2TlK-aSeqy7MT7pq/exec";
+
+    const NAMES = {
+      mopbuc: "Mop Bucket",
+      vac: "Vacuum Cleaner",
+      winkit: "Window Kit (Squeegee, Applicator, Bucket)",
+      scrub: "Scrubber",
+      presswash: "Pressure Washer",
+      polyvac: "Polyvac"
+    };
+
+    const STATES = {
+      vic: "VIC",
+      wa: "WA",
+      nsw: "NSW",
+      qld: "QLD",
+      act: "ACT"
+    };
+
+    const app = document.getElementById("app");
+    const rawCode = new URLSearchParams(window.location.search).get("code");
+
+    function parseCode(raw) {
+      if (typeof raw !== "string") return null;
+      const code = raw.trim().toLowerCase();
+      const parts = code.split("_");
+
+      if (
+        parts.length !== 3 ||
+        !STATES[parts[0]] ||
+        !NAMES[parts[1]] ||
+        !/^\d+$/.test(parts[2])
+      ) return null;
+
+      return {
+        state: STATES[parts[0]],
+        equipmentName: NAMES[parts[1]],
+        itemNumber: parts[2],
+        equipmentCode: code
+      };
+    }
+
+    function element(tag, attrs = {}, text = "") {
+      const el = document.createElement(tag);
+
+      for (const [k, v] of Object.entries(attrs)) {
+        el.setAttribute(k, v);
+      }
+
+      el.textContent = text;
+      return el;
+    }
+
+    function setNotice(node, message, kind = "info") {
+      node.className = "notice " + kind;
+      node.textContent = message;
+      node.hidden = false;
+    }
+
+    function formatDate(value) {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime())
+        ? String(value || "")
+        : date.toLocaleString();
+    }
+
+    async function getJSON(action) {
+      const url = new URL(SCRIPT_URL);
+      url.searchParams.set("action", action);
+      url.searchParams.set("_", String(Date.now()));
+
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        redirect: "follow",
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        throw new Error("HTTP " + response.status);
+      }
+
+      const data = await response.json();
+
+      if (data.success === false) {
+        throw new Error(data.message || "Spreadsheet error");
+      }
+
+      return data;
+    }
+
+    function showScan(code) {
+      const info = parseCode(code);
+
+      app.innerHTML = `
+        <h1>Log Equipment</h1>
+        <p class="sub">Scanned tag — confirm the site where this item is located.</p>
+        <section class="card" id="scanCard"></section>
+        <a href="${window.location.pathname}">← View equipment log</a>
+      `;
+
+      const card = document.getElementById("scanCard");
+
+      if (!info) {
+        card.append(element("p", {}, "Unrecognized equipment code. Check the QR code and try again."));
+        return;
+      }
+
+      card.innerHTML = `
+        <div class="pill">Equipment code</div>
+        <div class="code" id="equipmentCode"></div>
+
+        <div class="grid2" style="margin-top:18px">
+          <div>
+            <div class="pill">State</div>
+            <strong id="equipmentState"></strong>
+          </div>
+          <div>
+            <div class="pill">Equipment</div>
+            <strong id="equipmentName"></strong>
+          </div>
+        </div>
+
+        <form id="logForm">
+          <label for="site">Site name</label>
+          <input id="site" name="site" list="siteList"
+            placeholder="e.g. Kealba Hotel"
+            autocomplete="off" maxlength="150" required>
+
+          <datalist id="siteList"></datalist>
+
+          <button class="full" id="submitBtn" type="submit">
+            Submit equipment log
+          </button>
+        </form>
+
+        <div id="message" hidden role="status" aria-live="polite"></div>
+      `;
+
+      document.getElementById("equipmentCode").textContent = info.equipmentCode;
+      document.getElementById("equipmentState").textContent = info.state;
+      document.getElementById("equipmentName").textContent = info.equipmentName;
+
+      getJSON("sites").then(data => {
+        const datalist = document.getElementById("siteList");
+
+        for (const site of (Array.isArray(data.sites) ? data.sites : [])) {
+          if (typeof site === "string" && site.trim()) {
+            datalist.append(element("option", { value: site }));
+          }
+        }
+      }).catch(() => {});
+
+      const form = document.getElementById("logForm");
+
+      form.addEventListener("submit", async event => {
+        event.preventDefault();
+
+        const site = form.elements.site.value.trim();
+
+        if (!site) {
+          form.elements.site.focus();
+          return;
+        }
+
+        const button = document.getElementById("submitBtn");
+        const message = document.getElementById("message");
+
+        button.disabled = true;
+        button.textContent = "Submitting…";
+        message.hidden = true;
+
+        try {
+          // Google Apps Script's cross-origin redirects often prevent readable POST responses.
+          // no-cors sends the request but does NOT confirm whether Sheets stored it.
+          await fetch(SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            redirect: "follow",
+            headers: {
+              "Content-Type": "text/plain;charset=utf-8"
+            },
+            body: JSON.stringify({
+              state: info.state,
+              site,
+              equipmentName: info.equipmentName,
+              equipmentCode: info.equipmentCode
+            })
+          });
+
+          setNotice(
+            message,
+            "Submission sent. Check the Equipment Log to confirm the entry was saved in Google Sheets.",
+            "info"
+          );
+
+        } catch (error) {
+          setNotice(
+            message,
+            "Unable to send your entry. Check your internet connection and try again.",
+            "error"
+          );
+
+        } finally {
+          button.disabled = false;
+          button.textContent = "Submit equipment log";
+        }
+      });
+    }
+
+    async function showDashboard() {
+      app.innerHTML = `
+        <div class="row">
+          <div>
+            <h1>Equipment Site Log</h1>
+            <p class="sub">View equipment locations recorded by scanned QR tags.</p>
+          </div>
+        </div>
+
+        <section class="card">
+          <div class="row">
+            <div class="pill" id="count">Loading entries…</div>
+            <div class="actions">
+              <button class="secondary" id="refreshBtn" type="button">Refresh</button>
+              <button id="exportBtn" type="button" disabled>Export to Excel</button>
+            </div>
+          </div>
+
+          <div class="grid2">
+            <div>
+              <label for="stateFilter">Filter by state</label>
+              <select id="stateFilter">
+                <option value="">All states</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="search">Search site or equipment</label>
+              <input id="search" placeholder="Search entries…" type="search">
+            </div>
+          </div>
+
+          <div class="tablewrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>State</th>
+                  <th>Site</th>
+                  <th>Equipment Name</th>
+                  <th>Equipment Code</th>
+                  <th>Logged At</th>
+                </tr>
+              </thead>
+              <tbody id="rows">
+                <tr>
+                  <td class="empty" colspan="5">Loading…</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div id="notice" hidden role="status" aria-live="polite"></div>
+        </section>
+
+        <p class="footer">
+          Records are stored in the connected Google Sheet. This dashboard displays saved entries only.
+        </p>
+      `;
+
+      const stateFilter = document.getElementById("stateFilter");
+
+      for (const state of Object.values(STATES)) {
+        stateFilter.append(element("option", { value: state }, state));
+      }
+
+      const count = document.getElementById("count");
+      const body = document.getElementById("rows");
+      const notice = document.getElementById("notice");
+      const exportBtn = document.getElementById("exportBtn");
+
+      let records = [];
+
+      function filtered() {
+        const state = stateFilter.value;
+        const term = document.getElementById("search").value.trim().toLowerCase();
+
+        return records.filter(r =>
+          (!state || r.state === state) &&
+          (!term || [r.site, r.equipmentName, r.equipmentCode, r.state]
+            .some(v => String(v || "").toLowerCase().includes(term)))
+        );
+      }
+
+      function repaint() {
+        const selected = filtered();
+
+        count.textContent = `${selected.length} of ${records.length} entries`;
+        body.replaceChildren();
+
+        if (!selected.length) {
+          const tr = element("tr");
+          const td = element("td", { colspan: "5", class: "empty" }, "No equipment entries found.");
+          tr.append(td);
+          body.append(tr);
+        }
+
+        for (const r of selected) {
+          const tr = element("tr");
+
+          for (const val of [
+            r.state,
+            r.site,
+            r.equipmentName,
+            r.equipmentCode,
+            formatDate(r.timestamp)
+          ]) {
+            tr.append(element("td", {}, String(val ?? "")));
+          }
+
+          body.append(tr);
+        }
+
+        exportBtn.disabled = !selected.length;
+      }
+
+      async function refresh() {
+        const refreshBtn = document.getElementById("refreshBtn");
+
+        refreshBtn.disabled = true;
+        count.textContent = "Loading entries…";
+        notice.hidden = true;
+
+        try {
+          const response = await getJSON("logs");
+
+          if (!Array.isArray(response.rows)) {
+            throw new Error("Unexpected spreadsheet response");
+          }
+
+          records = response.rows;
+          repaint();
+
+        } catch (error) {
+          records = [];
+          repaint();
+
+          setNotice(
+            notice,
+            "Could not load Google Sheets entries. Verify your Apps Script deployment and sheet name. Details: " + error.message,
+            "error"
+          );
+
+        } finally {
+          refreshBtn.disabled = false;
+        }
+      }
+
+      stateFilter.addEventListener("change", repaint);
+      document.getElementById("search").addEventListener("input", repaint);
+      document.getElementById("refreshBtn").addEventListener("click", refresh);
+
+      exportBtn.addEventListener("click", () => {
+        if (typeof XLSX === "undefined") {
+          setNotice(
+            notice,
+            "Excel export library has not loaded. Check your internet connection and reload.",
+            "error"
+          );
+          return;
+        }
+
+        const rows = filtered().map(r => ({
+          State: r.state,
+          Site: r.site,
+          "Equipment Name": r.equipmentName,
+          "Equipment Code": r.equipmentCode,
+          "Logged At": formatDate(r.timestamp)
+        }));
+
+        const sheet = XLSX.utils.json_to_sheet(rows);
+        const book = XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(book, sheet, "Equipment Log");
+        XLSX.writeFile(book, "le_parfait_equipment_log.xlsx");
+      });
+
+      await refresh();
+    }
+
+    if (rawCode !== null) {
+      showScan(rawCode);
+    } else {
+      showDashboard();
+    }
+  </script>
 </body>
 </html>
