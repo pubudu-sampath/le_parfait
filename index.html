@@ -1,11 +1,185 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Equipment Site Log</title>
+<style>
+:root{
+  --bg:#f5f6f8; --card:#ffffff; --text:#1a1d23; --muted:#6b7280; --border:#e2e4e8;
+  --accent:#2563eb; --accent-text:#ffffff; --ok:#16a34a; --ok-bg:#ecfdf3;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#15171b; --card:#1e2126; --text:#e8eaed; --muted:#9aa0a6; --border:#2c2f36; --accent:#4f8cff; --accent-text:#0b1220; --ok:#34d399; --ok-bg:#0f2a1f; }
+}
+html,body{ height:100%; margin:0; }
+body{ background:var(--bg); color:var(--text); font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif; padding:20px 16px 40px; }
+.wrap{ max-width:640px; margin:0 auto; }
+h1{ font-size:1.25rem; margin:0 0 4px; }
+.sub{ color:var(--muted); font-size:.9rem; margin-bottom:18px; }
+.card{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:20px; margin-bottom:16px; }
+.code{ font-family:ui-monospace,Menlo,Consolas,monospace; font-weight:600; font-size:1.05rem; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:8px 12px; display:inline-block; }
+label{ display:block; font-size:.85rem; color:var(--muted); margin:14px 0 6px; }
+input, select{ width:100%; padding:11px 12px; border-radius:9px; border:1px solid var(--border); background:var(--bg); color:var(--text); font-size:1rem; box-sizing:border-box; }
+button{ margin-top:18px; width:100%; padding:12px; border-radius:9px; border:none; background:var(--accent); color:var(--accent-text); font-size:1rem; font-weight:600; cursor:pointer; }
+button:disabled{ opacity:.5; cursor:default; }
+button.secondary{ background:transparent; border:1px solid var(--border); color:var(--text); font-weight:500; width:auto; margin-top:0; }
+.confirm{ background:var(--ok-bg); color:var(--ok); border-radius:10px; padding:12px 14px; font-size:.92rem; margin-top:14px; display:none; }
+table{ width:100%; border-collapse:collapse; font-size:.85rem; }
+th,td{ text-align:left; padding:8px 6px; border-bottom:1px solid var(--border); white-space:nowrap; }
+th{ color:var(--muted); font-weight:600; }
+.tablewrap{ overflow-x:auto; }
+.row{ display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+.pill{ font-size:.75rem; color:var(--muted); }
+a.link{ color:var(--accent); text-decoration:none; font-size:.85rem; }
+.grid2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+</style>
 </head>
 <body>
-    <h1>Hello World!</h1>
+<div class="wrap" id="app"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* ============================================================
+   SET THIS after deploying the Apps Script (see apps-script.gs)
+   Deploy > New deployment > Web app > Execute as: Me,
+   Who has access: Anyone. Paste the resulting /exec URL below.
+   ============================================================ */
+const SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+
+const NAMES = {
+  mopbuc:"Mop Bucket", vac:"Vacuum Cleaner", winkit:"Window Kit (Squeegee, Applicator, Bucket)",
+  scrub:"Scrubber", presswash:"Pressure Washer", polyvac:"Polyvac"
+};
+const STATES = {vic:"VIC", wa:"WA", nsw:"NSW", qld:"QLD", act:"ACT"};
+
+function parseCode(code){
+  const parts = code.toLowerCase().split("_");
+  if(parts.length < 3) return null;
+  const state = STATES[parts[0]]; const eqPrefix = parts[1]; const item = parts.slice(2).join("_");
+  if(!state || !NAMES[eqPrefix]) return null;
+  return {state, equipmentName: NAMES[eqPrefix], itemNumber: item, equipmentCode: code.toLowerCase()};
+}
+
+const app = document.getElementById("app");
+const params = new URLSearchParams(location.search);
+const rawCode = params.get("code");
+
+render();
+
+function render(){
+  if(rawCode){ renderScan(rawCode); } else { renderDashboard(); }
+}
+
+function renderScan(rawCode){
+  const info = parseCode(rawCode);
+  app.innerHTML = `
+    <h1>Log Equipment</h1>
+    <div class="sub">Scanned tag — confirm the site this item is at.</div>
+    <div class="card">
+      ${info ? `
+        <div class="pill">Equipment code</div>
+        <div class="code">${info.equipmentCode}</div>
+        <div class="grid2" style="margin-top:14px">
+          <div><div class="pill">State</div><div><strong>${info.state}</strong></div></div>
+          <div><div class="pill">Equipment</div><div><strong>${info.equipmentName}</strong></div></div>
+        </div>
+        <label for="site">Site name</label>
+        <input id="site" list="siteList" placeholder="e.g. Kealba Hotel" autocomplete="off">
+        <datalist id="siteList"></datalist>
+        <button id="submitBtn">Submit</button>
+        <div class="confirm" id="confirm"></div>
+      ` : `<div style="color:var(--muted)">This QR code isn't a recognised equipment code (${rawCode}).</div>`}
+    </div>
+    <div class="row"><a class="link" href="${location.pathname}">← View all logged entries</a></div>
+  `;
+  if(!info) return;
+  loadSiteSuggestions();
+  document.getElementById("submitBtn").addEventListener("click", async () => {
+    const site = document.getElementById("site").value.trim();
+    const btn = document.getElementById("submitBtn");
+    if(!site){ document.getElementById("site").focus(); return; }
+    btn.disabled = true; btn.textContent = "Submitting…";
+    try{
+      await fetch(SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" }, // avoids CORS preflight on Apps Script
+        body: JSON.stringify({
+          state: info.state, site, equipmentName: info.equipmentName,
+          equipmentCode: info.equipmentCode, timestamp: new Date().toISOString()
+        })
+      });
+      showConfirm(`Logged ${info.equipmentCode} at "${site}".`, true);
+      btn.textContent = "Submit"; btn.disabled = false;
+    }catch(e){
+      showConfirm("Couldn't save — check your connection and try again.", false);
+      btn.textContent = "Submit"; btn.disabled = false;
+    }
+  });
+}
+
+function showConfirm(msg, ok){
+  const el = document.getElementById("confirm");
+  el.style.display = "block";
+  el.style.background = ok ? "var(--ok-bg)" : "#3a1d1f";
+  el.style.color = ok ? "var(--ok)" : "#f87171";
+  el.textContent = msg;
+}
+
+async function loadSiteSuggestions(){
+  try{
+    const res = await fetch(`${SCRIPT_URL}?action=sites`);
+    const data = await res.json();
+    document.getElementById("siteList").innerHTML = (data.sites || []).map(s=>`<option value="${s}">`).join("");
+  }catch(e){}
+}
+
+async function renderDashboard(){
+  const SAMPLE_ROW = { state:"VIC", site:"Kealba Hotel", equipmentName:"Mop Bucket", equipmentCode:"vic_mopbuc_001", timestamp:new Date().toISOString() };
+  app.innerHTML = `
+    <h1>Equipment Site Log</h1>
+    <div class="card">
+      <div class="row">
+        <div class="pill" id="count">Loading…</div>
+      </div>
+      <div class="tablewrap" style="margin-top:12px">
+        <table>
+          <thead><tr><th>State</th><th>Site Name</th><th>Equipment Name</th><th>Equipment Code</th><th>Logged At</th></tr></thead>
+          <tbody id="rows">
+            <tr style="opacity:.6">
+              <td>${SAMPLE_ROW.state}</td><td>${SAMPLE_ROW.site}</td><td>${SAMPLE_ROW.equipmentName}</td>
+              <td>${SAMPLE_ROW.equipmentCode}</td><td>${new Date(SAMPLE_ROW.timestamp).toLocaleString()} (sample)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <button id="exportBtn" style="margin-top:16px">Submit</button>
+    </div>
+  `;
+  let latest = [];
+  try{
+    const res = await fetch(`${SCRIPT_URL}?action=logs`);
+    const data = await res.json();
+    latest = data.rows || [];
+    document.getElementById("count").textContent = latest.length + " entries";
+    const sampleRowHtml = `<tr style="opacity:.6">
+      <td>${SAMPLE_ROW.state}</td><td>${SAMPLE_ROW.site}</td><td>${SAMPLE_ROW.equipmentName}</td>
+      <td>${SAMPLE_ROW.equipmentCode}</td><td>${new Date(SAMPLE_ROW.timestamp).toLocaleString()} (sample)</td>
+    </tr>`;
+    document.getElementById("rows").innerHTML = sampleRowHtml + latest.map(r=>`
+      <tr><td>${r.state}</td><td>${r.site}</td><td>${r.equipmentName}</td><td>${r.equipmentCode}</td>
+      <td>${new Date(r.timestamp).toLocaleString()}</td></tr>`).join("");
+  }catch(e){
+    document.getElementById("count").textContent = "Couldn't load entries.";
+  }
+  document.getElementById("exportBtn").addEventListener("click", () => {
+    const data = latest.map(r=>({State:r.state, "Site Name":r.site, "Equipment Name":r.equipmentName, "Equipment Code":r.equipmentCode, "Logged At":new Date(r.timestamp).toLocaleString()}));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Equipment Log");
+    XLSX.writeFile(wb, "equipment_site_log.xlsx");
+  });
+}
+</script>
 </body>
 </html>
