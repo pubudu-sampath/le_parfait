@@ -2,1282 +2,1145 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#2563eb">
-  <title>Le Parfait | Equipment Site Log</title>
-  <style>
-    :root {
-      color-scheme: light dark;
-      --bg: #f5f6f8;
-      --card: #fff;
-      --text: #1a1d23;
-      --muted: #6b7280;
-      --border: #e2e4e8;
-      --accent: #2563eb;
-      --accent-text: #fff;
-      --ok: #166534;
-      --ok-bg: #dcfce7;
-      --error: #b91c1c;
-      --error-bg: #fee2e2;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #15171b;
-        --card: #1e2126;
-        --text: #e8eaed;
-        --muted: #a4aab4;
-        --border: #343942;
-        --accent: #4f8cff;
-        --accent-text: #0b1220;
-        --ok: #86efac;
-        --ok-bg: #103623;
-        --error: #fca5a5;
-        --error-bg: #451c22;
-      }
-    }
-    * { box-sizing: border-box; }
-    html, body { min-height: 100%; margin: 0; }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      padding: 24px 16px 48px;
-    }
-    .wrap { max-width: 820px; margin: auto; }
-    h1 { font-size: 1.5rem; margin: 0 0 6px; }
-    .sub {
-      color: var(--muted);
-      font-size: .92rem;
-      margin: 0 0 20px;
-      line-height: 1.5;
-    }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 15px;
-      padding: 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 2px 8px #00000008;
-    }
-    .row {
-      display: flex;
-      gap: 12px;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .grid2 {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-    }
-    .pill { color: var(--muted); font-size: .78rem; }
-    .code {
-      display: inline-block;
-      max-width: 100%;
-      overflow-wrap: anywhere;
-      font: 600 1rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 12px;
-      margin-top: 6px;
-    }
-    label {
-      display: block;
-      font-size: .87rem;
-      color: var(--muted);
-      margin: 16px 0 7px;
-    }
-    input, select {
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 9px;
-      background: var(--bg);
-      color: var(--text);
-      font: inherit;
-      padding: 12px;
-    }
-    button {
-      border: 0;
-      border-radius: 9px;
-      background: var(--accent);
-      color: var(--accent-text);
-      font: 600 .95rem system-ui;
-      cursor: pointer;
-      padding: 12px 16px;
-    }
-    button:disabled { opacity: .55; cursor: not-allowed; }
-    .full { width: 100%; margin-top: 18px; }
-    .secondary {
-      background: transparent;
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-    .actions { display: flex; gap: 10px; flex-wrap: wrap; }
-    .notice {
-      padding: 12px 14px;
-      margin-top: 14px;
-      border-radius: 9px;
-      font-size: .92rem;
-      line-height: 1.5;
-    }
-    .notice.ok { color: var(--ok); background: var(--ok-bg); }
-    .notice.error { color: var(--error); background: var(--error-bg); }
-    .notice.info { color: var(--text); background: var(--bg); }
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    .tablewrap { overflow-x: auto; margin-top: 16px; }
-    table { width: 100%; border-collapse: collapse; font-size: .86rem; }
-    th, td {
-      text-align: left;
-      padding: 11px 10px;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-    th { color: var(--muted); font-weight: 600; }
-    td.empty {
-      text-align: center;
-      color: var(--muted);
-      padding: 25px;
-    }
-    .footer {
-      font-size: .8rem;
-      color: var(--muted);
-      margin-top: 18px;
-    }
-    .scanner-panel { margin-bottom: 16px; }
-    .scanner-preview {
-      width: 100%;
-      max-width: 500px;
-      margin: 12px auto;
-      overflow: hidden;
-      border-radius: 12px;
-      background: #101114;
-    }
-    .scanner-preview video { border-radius: 12px; }
-    .scanner-status {
-      font-size: .9rem;
-      color: var(--muted);
-      margin-top: 10px;
-      overflow-wrap: anywhere;
-    }
-    .scanner-buttons {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .scanner-buttons button { flex: 1; min-width: 130px; }
-    .scan-result { overflow-wrap: anywhere; }
-    .camera-help {
-      font-size: .8rem;
-      color: var(--muted);
-      line-height: 1.5;
-      margin-top: 10px;
-    }
-    .code-link {
-      border: 0;
-      background: transparent;
-      color: var(--accent);
-      padding: 0;
-      font: 600 .86rem ui-monospace, monospace;
-      text-decoration: underline;
-      text-underline-offset: 3px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .history-panel {
-      margin-top: 20px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      background: var(--bg);
-    }
-    .current-site {
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 13px;
-      margin-top: 16px;
-      background: var(--bg);
-    }
-    .current-site strong { display: block; margin-top: 5px; }
-    .bottom-actions { justify-content: flex-end; margin-top: 18px; }
-    .history-panel td, .history-panel th { white-space: normal; }
-    [hidden] { display: none !important; }
-    @media (max-width: 480px) {
-      .grid2 { grid-template-columns: 1fr; }
-      .card { padding: 16px; }
-      .actions { width: 100%; }
-      .actions button { flex: 1; }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le Parfait | Equipment Site Log</title>
+
+<style>
+:root {
+  color-scheme: light dark;
+  --bg:#f5f6f8;
+  --card:#fff;
+  --text:#1a1d23;
+  --muted:#6b7280;
+  --border:#e2e4e8;
+  --accent:#2563eb;
+  --accent-text:#fff;
+  --ok:#166534;
+  --ok-bg:#dcfce7;
+  --error:#b91c1c;
+  --error-bg:#fee2e2;
+}
+@media(prefers-color-scheme:dark) {
+  :root {
+    --bg:#15171b;
+    --card:#1e2126;
+    --text:#e8eaed;
+    --muted:#a4aab4;
+    --border:#343942;
+    --accent:#4f8cff;
+    --accent-text:#0b1220;
+    --ok:#86efac;
+    --ok-bg:#103623;
+    --error:#fca5a5;
+    --error-bg:#451c22;
+  }
+}
+* {box-sizing:border-box}
+[hidden] {display:none!important}
+body {
+  margin:0;
+  padding:24px 16px 48px;
+  background:var(--bg);
+  color:var(--text);
+  font-family:system-ui,Arial,sans-serif;
+}
+.wrap {max-width:900px;margin:auto}
+h1 {font-size:1.5rem;margin:0 0 6px}
+.sub {
+  color:var(--muted);
+  font-size:.92rem;
+  margin:0 0 20px;
+  line-height:1.5;
+}
+.card {
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:15px;
+  padding:20px;
+  margin-bottom:16px;
+}
+.row {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.grid2 {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+.pill {font-size:.8rem;color:var(--muted)}
+label {
+  display:block;
+  font-size:.87rem;
+  color:var(--muted);
+  margin:16px 0 7px;
+}
+input,select {
+  width:100%;
+  padding:12px;
+  border:1px solid var(--border);
+  border-radius:9px;
+  background:var(--bg);
+  color:var(--text);
+  font:inherit;
+}
+button,.button-link {
+  display:inline-block;
+  padding:12px 16px;
+  border:0;
+  border-radius:9px;
+  background:var(--accent);
+  color:var(--accent-text);
+  font:600 .95rem system-ui;
+  cursor:pointer;
+  text-decoration:none;
+  text-align:center;
+}
+button:disabled {opacity:.5;cursor:default}
+.secondary {
+  background:transparent;
+  color:var(--text);
+  border:1px solid var(--border);
+}
+a {color:var(--accent)}
+.actions {display:flex;gap:10px;flex-wrap:wrap}
+.bottom-actions {
+  display:flex;
+  justify-content:flex-end;
+  margin-top:18px;
+}
+.full {width:100%;margin-top:18px}
+.code {
+  display:inline-block;
+  padding:10px 12px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:var(--bg);
+  font:600 1rem monospace;
+  overflow-wrap:anywhere;
+  margin-top:6px;
+}
+.tablewrap {overflow-x:auto;margin-top:16px}
+table {width:100%;border-collapse:collapse;font-size:.86rem}
+th,td {
+  padding:11px 10px;
+  text-align:left;
+  border-bottom:1px solid var(--border);
+  white-space:nowrap;
+}
+th {color:var(--muted)}
+.empty {
+  text-align:center;
+  color:var(--muted);
+  padding:25px;
+}
+.code-link {
+  background:none;
+  border:0;
+  padding:0;
+  color:var(--accent);
+  font:600 .86rem monospace;
+  text-decoration:underline;
+  cursor:pointer;
+}
+.notice {
+  padding:12px 14px;
+  border-radius:9px;
+  margin-top:14px;
+  font-size:.92rem;
+  line-height:1.5;
+}
+.notice.ok {background:var(--ok-bg);color:var(--ok)}
+.notice.error {background:var(--error-bg);color:var(--error)}
+.notice.info {background:var(--bg);color:var(--text)}
+.history-panel,.current-site {
+  border:1px solid var(--border);
+  background:var(--bg);
+  border-radius:12px;
+  padding:16px;
+  margin-top:16px;
+}
+.current-site strong {display:block;margin-top:5px}
+.history-panel td,.history-panel th {white-space:normal}
+.scanner-preview {
+  width:100%;
+  max-width:500px;
+  margin:12px auto;
+  overflow:hidden;
+  border-radius:12px;
+  background:#101114;
+}
+.scanner-status {
+  color:var(--muted);
+  font-size:.9rem;
+  overflow-wrap:anywhere;
+}
+.camera-help,.footer {
+  font-size:.8rem;
+  color:var(--muted);
+  line-height:1.5;
+}
+.footer {margin-top:18px}
+@media(max-width:480px) {
+  .grid2 {grid-template-columns:1fr}
+  .card {padding:16px}
+  .actions {width:100%}
+  .actions button {flex:1}
+}
+</style>
 </head>
 
 <body>
-  <main class="wrap" id="app">
-    <h1>Equipment Site Log</h1>
-    <p class="sub">Loading…</p>
-  </main>
+<main class="wrap" id="app">
+  <h1>Equipment Site Log</h1>
+  <p class="sub">Loading...</p>
+</main>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
-  <script>
-    "use strict";
+<script>
+"use strict";
 
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-ywy1Zqj0x8dXs35ry09gd6G5p7VhUMQYWKmTvOb4HnrpO19B2TlK-aSeqy7MT7pq/exec";
+// GOOGLE APPS SCRIPT
+const SCRIPT_URL =
+"https://script.google.com/macros/s/AKfycby-ywy1Zqj0x8dXs35ry09gd6G5p7VhUMQYWKmTvOb4HnrpO19B2TlK-aSeqy7MT7pq/exec";
 
-    const NAMES = {
-      mopbuc: "Mop Bucket",
-      vac: "Vacuum Cleaner",
-      winkit: "Window Kit (Squeegee, Applicator, Bucket)",
-      scrub: "Scrubber",
-      presswash: "Pressure Washer",
-      polyvac: "Polyvac"
+const STATES = {
+  vic:"VIC",
+  wa:"WA",
+  nsw:"NSW",
+  qld:"QLD",
+  act:"ACT"
+};
+
+const NAMES = {
+  mopbuc:"Mop Bucket",
+  vac:"Vacuum Cleaner",
+  winkit:"Window Kit (Squeegee, Applicator, Bucket)",
+  scrub:"Scrubber",
+  presswash:"Pressure Washer",
+  polyvac:"Polyvac"
+};
+
+const app = document.getElementById("app");
+const params = new URLSearchParams(location.search);
+
+// UTILITY FUNCTIONS
+function el(tag,text="",className="") {
+  const node=document.createElement(tag);
+  node.textContent=text;
+  if(className) node.className=className;
+  return node;
+}
+
+function notice(node,message,type="info") {
+  node.className="notice "+type;
+  node.textContent=message;
+  node.hidden=false;
+}
+
+function formatDate(value) {
+  const date=new Date(value);
+  return isNaN(date.getTime())
+    ? String(value||"")
+    : date.toLocaleString();
+}
+
+function wait(ms) {
+  return new Promise(resolve=>setTimeout(resolve,ms));
+}
+
+async function getJSON(action) {
+  const url=new URL(SCRIPT_URL);
+  url.searchParams.set("action",action);
+  url.searchParams.set("_",Date.now());
+
+  const response=await fetch(url,{
+    cache:"no-store"
+  });
+
+  if(!response.ok) {
+    throw new Error("HTTP "+response.status);
+  }
+
+  const data=await response.json();
+
+  if(data.success===false) {
+    throw new Error(data.message||"Spreadsheet error");
+  }
+
+  return data;
+}
+
+// EQUIPMENT QR CODE PARSING
+function parseCode(raw,stateParam="",equipmentParam="") {
+  if(typeof raw!=="string") return null;
+
+  const code=raw.trim().toLowerCase();
+  const parts=code.split("_");
+
+  if(
+    parts.length===3 &&
+    STATES[parts[0]] &&
+    NAMES[parts[1]] &&
+    /^\d+$/.test(parts[2])
+  ) {
+    return {
+      state:STATES[parts[0]],
+      equipmentName:NAMES[parts[1]],
+      equipmentCode:code
     };
+  }
 
-    const STATES = {
-      vic: "VIC",
-      wa: "WA",
-      nsw: "NSW",
-      qld: "QLD",
-      act: "ACT"
+  const state=String(stateParam).toUpperCase();
+  const equipmentName=String(equipmentParam).trim();
+
+  if(
+    Object.values(STATES).includes(state) &&
+    equipmentName &&
+    equipmentName.length<=70 &&
+    /^[a-z0-9_-]{3,85}$/.test(code)
+  ) {
+    return {
+      state,
+      equipmentName,
+      equipmentCode:code
     };
+  }
 
-    const app = document.getElementById("app");
-    const rawCode = new URLSearchParams(window.location.search).get("code");
+  return null;
+}
 
-    // PARSE EQUIPMENT CODE
-    function parseCode(raw) {
-      if (typeof raw !== "string") return null;
+function resolveQR(raw) {
+  const value=String(raw||"").trim();
+  if(!value) return null;
 
-      const code = raw.trim().toLowerCase();
-      const parts = code.split("_");
+  let code=value;
+  let state="";
+  let equipment="";
 
-      if (
-        parts.length !== 3 ||
-        !STATES[parts[0]] ||
-        !NAMES[parts[1]] ||
-        !/^\d+$/.test(parts[2])
-      ) {
-        // Custom equipment QR URLs carry state and equipment name.
-        const params = new URLSearchParams(location.search);
-        const state = String(params.get("state") || "").toUpperCase();
-        const equipmentName = String(params.get("equipment") || "").trim();
+  try {
+    const url=new URL(value);
 
-        if (
-          !Object.values(STATES).includes(state) ||
-          !equipmentName ||
-          equipmentName.length > 70 ||
-          !/^[a-zA-Z0-9_-]{3,85}$/.test(code)
-        ) return null;
+    if(
+      url.protocol!=="https:" ||
+      url.hostname!=="leparfait.vercel.app"
+    ) return null;
 
-        return {
-          state,
-          equipmentName,
-          itemNumber: "",
-          equipmentCode: code
-        };
-      }
-
-      return {
-        state: STATES[parts[0]],
-        equipmentName: NAMES[parts[1]],
-        itemNumber: parts[2],
-        equipmentCode: code
-      };
-    }
-
-    function element(tag, attrs = {}, text = "") {
-      const el = document.createElement(tag);
-      for (const [k, v] of Object.entries(attrs)) {
-        el.setAttribute(k, v);
-      }
-      el.textContent = text;
-      return el;
-    }
-
-    function setNotice(node, message, kind = "info") {
-      node.className = "notice " + kind;
-      node.textContent = message;
-      node.hidden = false;
-    }
-
-    function formatDate(value) {
-      const date = new Date(value);
-      return Number.isNaN(date.getTime())
-        ? String(value || "")
-        : date.toLocaleString();
-    }
-
-    // READ GOOGLE SHEETS DATA
-    async function getJSON(action) {
-      const url = new URL(SCRIPT_URL);
-      url.searchParams.set("action", action);
-      url.searchParams.set("_", String(Date.now()));
-
-      const response = await fetch(url.toString(), {
-        method: "GET",
-        redirect: "follow",
-        cache: "no-store"
-      });
-
-      if (!response.ok) {
-        throw new Error("HTTP " + response.status);
-      }
-
-      const data = await response.json();
-
-      if (data.success === false) {
-        throw new Error(data.message || "Spreadsheet error");
-      }
-
-      return data;
-    }
-
-    // VERIFY A NEW ENTRY AGAINST EXISTING RECORDS
-    function matchesLog(row, info, site) {
-      return (
-        String(row.state || "").trim().toUpperCase() === info.state &&
-        String(row.site || "").trim().toLowerCase() === site.toLowerCase() &&
-        String(row.equipmentCode || "").trim().toLowerCase() === info.equipmentCode
-      );
-    }
-
-    async function readMatchingCount(info, site) {
-      const data = await getJSON("logs");
-
-      if (!Array.isArray(data.rows)) {
-        throw new Error("Unexpected logs response");
-      }
-
-      return data.rows.filter(row =>
-        matchesLog(row, info, site)
-      ).length;
-    }
-
-    function wait(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    async function verifySavedLog(info, site, previousCount, startedAt) {
-      for (let attempt = 0; attempt < 5; attempt++) {
-        if (attempt) await wait(1400);
-
-        try {
-          const data = await getJSON("logs");
-          if (!Array.isArray(data.rows)) continue;
-
-          const matching = data.rows.filter(row =>
-            matchesLog(row, info, site)
-          );
-
-          if (previousCount !== null) {
-            if (matching.length > previousCount) return true;
-          } else if (matching.some(row => {
-            const time = new Date(row.timestamp).getTime();
-            return Number.isFinite(time) && time >= startedAt - 5000;
-          })) {
-            return true;
-          }
-        } catch (_) {
-          // Reading the sheet may fail temporarily.
-        }
-      }
-      return false;
-    }
-
-    // EQUIPMENT ASSIGNMENT AND SCAN HISTORY
-    function getHistory(rows, code) {
-      return rows.filter(row =>
-        String(row.equipmentCode || "")
-          .trim()
-          .toLowerCase() === code.toLowerCase()
-      );
-    }
-
-    function latestByCode(rows) {
-      const map = new Map();
-
-      for (const row of rows) {
-        const key = String(row.equipmentCode || "")
-          .trim()
-          .toLowerCase();
-
-        if (key) map.set(key, row);
-      }
-
-      return [...map.values()].reverse();
-    }
-
-    function renderHistory(container, code, history) {
-      container.replaceChildren();
-
-      const header = element("div", { class: "row" });
-      header.append(element("strong", {}, "Scan history — " + code));
-
-      const close = element(
-        "button",
-        { type: "button", class: "secondary" },
-        "Close"
-      );
-
-      close.addEventListener("click", () => {
-        container.hidden = true;
-      });
-
-      header.append(close);
-      container.append(header);
-
-      if (!history.length) {
-        container.append(
-          element("p", { class: "sub" },
-            "No previous scans found for this equipment.")
-        );
-        container.hidden = false;
-        return;
-      }
-
-      container.append(
-        element(
-          "p",
-          { class: "pill" },
-          history.length + " saved scan(s) · Most recent first"
-        )
-      );
-
-      const wrap = element("div", { class: "tablewrap" });
-      const table = element("table");
-      const head = element("thead");
-      const headingRow = element("tr");
-
-      ["Site", "State", "Logged At"].forEach(heading =>
-        headingRow.append(element("th", {}, heading))
-      );
-
-      head.append(headingRow);
-      table.append(head);
-
-      const tbody = element("tbody");
-
-      [...history].reverse().forEach((row, index) => {
-        const tr = element("tr");
-
-        [
-          row.site,
-          row.state,
-          formatDate(row.timestamp)
-        ].forEach(value =>
-          tr.append(element("td", {}, String(value ?? "")))
-        );
-
-        if (index === 0) tr.style.fontWeight = "600";
-        tbody.append(tr);
-      });
-
-      table.append(tbody);
-      wrap.append(table);
-      container.append(wrap);
-      container.hidden = false;
-    }
-
-    // EQUIPMENT SCAN AND SITE ASSIGNMENT FORM
-    function showScan(code) {
-      const info = parseCode(code);
-
-      app.innerHTML = `
-        <h1>Log Equipment</h1>
-        <p class="sub">
-          Scanned tag — confirm the site where this item is located.
-        </p>
-
-        <section class="card" id="scanCard"></section>
-
-        <a href="${window.location.pathname}">
-          ← View equipment log
-        </a>
-      `;
-
-      const card = document.getElementById("scanCard");
-
-      if (!info) {
-        card.append(
-          element(
-            "p", {},
-            "Unrecognized equipment code. Check the QR code and try again."
-          )
-        );
-        return;
-      }
-
-      card.innerHTML = `
-        <div class="pill">Equipment code</div>
-        <div class="code" id="equipmentCode"></div>
-
-        <div class="grid2" style="margin-top:18px">
-          <div>
-            <div class="pill">State</div>
-            <strong id="equipmentState"></strong>
-          </div>
-          <div>
-            <div class="pill">Equipment</div>
-            <strong id="equipmentName"></strong>
-          </div>
-        </div>
-
-        <div class="current-site" id="currentSite"
-             role="status" aria-live="polite">
-          Checking current assigned site…
-        </div>
-
-        <div class="history-panel" id="scanHistory" hidden></div>
-
-        <form id="logForm">
-          <label for="site">
-            New site name (leave unchanged if not moving equipment)
-          </label>
-
-          <input id="site" name="site" list="siteList"
-                 placeholder="e.g. Kealba Hotel"
-                 autocomplete="off" maxlength="150" required>
-
-          <datalist id="siteList"></datalist>
-
-          <button class="full" id="submitBtn" type="submit">
-            Submit equipment log
-          </button>
-        </form>
-
-        <div id="message" hidden
-             role="status" aria-live="polite"></div>
-      `;
-
-      document.getElementById("equipmentCode").textContent =
-        info.equipmentCode;
-      document.getElementById("equipmentState").textContent =
-        info.state;
-      document.getElementById("equipmentName").textContent =
-        info.equipmentName;
-
-      const assignment = document.getElementById("currentSite");
-      const scanHistory = document.getElementById("scanHistory");
-
-      let currentlyAssignedSite = null;
-      let assignmentLoaded = false;
-
-      // LOOK UP THE CURRENT EQUIPMENT LOCATION
-      getJSON("logs").then(data => {
-        if (!Array.isArray(data.rows)) {
-          throw new Error("Unexpected logs response");
-        }
-
-        const history = getHistory(data.rows, info.equipmentCode);
-        assignmentLoaded = true;
-
-        if (history.length) {
-          const latest = history[history.length - 1];
-
-          currentlyAssignedSite =
-            String(latest.site || "").trim();
-
-          assignment.replaceChildren(
-            element("span", { class: "pill" }, "Currently assigned to"),
-            element("strong", {}, currentlyAssignedSite || "Unknown site"),
-            element(
-              "span",
-              { class: "pill" },
-              "Last logged: " + formatDate(latest.timestamp)
-            )
-          );
-
-          const showHistory = element(
-            "button",
-            { type: "button", class: "secondary" },
-            "View scan history (" + history.length + ")"
-          );
-
-          showHistory.style.marginTop = "10px";
-
-          showHistory.addEventListener("click", () =>
-            renderHistory(scanHistory, info.equipmentCode, history)
-          );
-
-          assignment.append(showHistory);
-
-          document.getElementById("site").value =
-            currentlyAssignedSite;
-
-          document.getElementById("submitBtn").textContent =
-            "Save site assignment";
-        } else {
-          assignment.textContent =
-            "Not yet assigned — this equipment has no saved scan history.";
-        }
-      }).catch(error => {
-        assignment.textContent =
-          "Current assignment unavailable (" + error.message +
-          "). Check the spreadsheet before changing the site.";
-      });
-
-      // LOAD PREVIOUSLY USED SITE NAMES
-      getJSON("sites").then(data => {
-        const datalist = document.getElementById("siteList");
-
-        for (const site of (
-          Array.isArray(data.sites) ? data.sites : []
-        )) {
-          if (typeof site === "string" && site.trim()) {
-            datalist.append(
-              element("option", { value: site })
-            );
-          }
-        }
-      }).catch(() => {});
-
-      const form = document.getElementById("logForm");
-
-      // SAVE NEW ASSIGNMENT TO GOOGLE SHEETS
-      form.addEventListener("submit", async event => {
-        event.preventDefault();
-
-        const site = form.elements.site.value.trim();
-
-        if (!assignmentLoaded) {
-          setNotice(
-            document.getElementById("message"),
-            "Cannot verify the current assignment. Check the spreadsheet connection before submitting.",
-            "error"
-          );
-          return;
-        }
-
-        if (
-          currentlyAssignedSite &&
-          site.toLowerCase() === currentlyAssignedSite.toLowerCase()
-        ) {
-          setNotice(
-            document.getElementById("message"),
-            "This equipment is already assigned to " +
-              currentlyAssignedSite +
-              ". Enter a different site to record a transfer.",
-            "info"
-          );
-          return;
-        }
-
-        if (!site) {
-          form.elements.site.focus();
-          return;
-        }
-
-        const button = document.getElementById("submitBtn");
-        const message = document.getElementById("message");
-
-        button.disabled = true;
-        button.textContent = "Submitting…";
-        message.hidden = true;
-
-        try {
-          let previousCount = null;
-
-          try {
-            previousCount = await readMatchingCount(info, site);
-          } catch (_) {
-            // May be blocked by cross-origin browser rules.
-          }
-
-          const startedAt = Date.now();
-
-          await fetch(SCRIPT_URL, {
-            method: "POST",
-            mode: "no-cors",
-            headers: {
-              "Content-Type": "text/plain;charset=utf-8"
-            },
-            body: JSON.stringify({
-              state: info.state,
-              site: site,
-              equipmentName: info.equipmentName,
-              equipmentCode: info.equipmentCode
-            })
-          });
-
-          button.textContent = "Checking spreadsheet…";
-
-          const verified = await verifySavedLog(
-            info,
-            site,
-            previousCount,
-            startedAt
-          );
-
-          if (verified) {
-            currentlyAssignedSite = site;
-            assignmentLoaded = true;
-
-            assignment.textContent =
-              "Current assignment saved: " + site +
-              ". Refresh to see complete history.";
-
-            setNotice(
-              message,
-              "Saved successfully to Google Sheets: " +
-                info.equipmentCode + " at " + site + ".",
-              "ok"
-            );
-          } else {
-            setNotice(
-              message,
-              "Submission sent, but the spreadsheet could not be verified. Check the Equipment Log or Google Sheet before submitting again to avoid duplicates.",
-              "info"
-            );
-          }
-        } catch (error) {
-          setNotice(
-            message,
-            "Unable to send the submission. Check your connection and Google Apps Script URL. " +
-              error.message,
-            "error"
-          );
-        } finally {
-          button.disabled = false;
-          button.textContent = "Submit equipment log";
-        }
-      });
-    }
-
-    // RESOLVE QR CONTENT
-    function resolveScannedQR(raw) {
-      const value = String(raw || "").trim();
-      if (!value) return null;
-
-      let params = new URLSearchParams();
-      let code = value;
-
-      try {
-        const url = new URL(value);
-
-        if (
-          url.protocol !== "https:" ||
-          url.hostname !== "leparfait.vercel.app"
-        ) return null;
-
-        params = url.searchParams;
-        code = params.get("code") || "";
-      } catch (_) {
-        // Plain equipment identifier rather than a URL.
-      }
-
-      const bits = code.toLowerCase().split("_");
-
-      const builtIn =
-        bits.length === 3 &&
-        !!STATES[bits[0]] &&
-        !!NAMES[bits[1]] &&
-        /^\d+$/.test(bits[2]);
-
-      if (builtIn) {
-        return {
-          code: code.toLowerCase(),
-          state: null,
-          equipment: null
-        };
-      }
-
-      const state = String(
-        params.get("state") || ""
-      ).toUpperCase();
-
-      const equipment = String(
-        params.get("equipment") || ""
-      ).trim();
-
-      if (
-        Object.values(STATES).includes(state) &&
-        equipment &&
-        equipment.length <= 70 &&
-        /^[a-zA-Z0-9_-]{3,85}$/.test(code)
-      ) {
-        return {
-          code: code.toLowerCase(),
-          state,
-          equipment
-        };
-      }
-
-      return null;
-    }
-
-    // OPEN LOG FORM FOR DETECTED EQUIPMENT
-    function openScannedEquipment(scan) {
-      const target = new URL(
-        window.location.pathname,
-        window.location.origin
-      );
-
-      target.searchParams.set("code", scan.code);
-
-      if (scan.state) {
-        target.searchParams.set("state", scan.state);
-      }
-
-      if (scan.equipment) {
-        target.searchParams.set("equipment", scan.equipment);
-      }
-
-      window.location.assign(target.toString());
-    }
-
-    // CAMERA QR SCANNER
-    function setupCameraScanner() {
-      const open = document.getElementById("openScanner");
-      const close = document.getElementById("closeScanner");
-      const panel = document.getElementById("cameraPanel");
-      const status = document.getElementById("cameraStatus");
-      const manual = document.getElementById("manualQR");
-      const manualBtn = document.getElementById("manualQRBtn");
-
-      let scanner = null;
-      let scanning = false;
-      let processing = false;
-
-      function scanned(text) {
-        if (processing) return;
-
-        const result = resolveScannedQR(text);
-
-        if (!result) {
-          status.textContent =
-            "QR detected, but it is not a supported Le Parfait equipment code. You can try another tag.";
-          return;
-        }
-
-        processing = true;
-        status.textContent =
-          "Equipment found. Opening the logging form…";
-
-        if (scanner && scanning) {
-          scanner.stop()
-            .catch(() => {})
-            .finally(() => openScannedEquipment(result));
-        } else {
-          openScannedEquipment(result);
-        }
-      }
-
-      async function stopScanner() {
-        if (scanner && scanning) {
-          try {
-            await scanner.stop();
-          } catch (_) {}
-
-          scanning = false;
-        }
-
-        try {
-          scanner?.clear();
-        } catch (_) {}
-
-        scanner = null;
-        panel.hidden = true;
-        open.hidden = false;
-      }
-
-      open.addEventListener("click", async () => {
-        panel.hidden = false;
-        open.hidden = true;
-        status.textContent = "Requesting camera permission…";
-
-        if (!window.isSecureContext) {
-          status.textContent =
-            "Camera scanning requires HTTPS (or localhost).";
-          return;
-        }
-
-        if (typeof Html5Qrcode === "undefined") {
-          status.textContent =
-            "Scanner library unavailable. Check your connection or use manual entry.";
-          return;
-        }
-
-        try {
-          scanner = new Html5Qrcode(
-            "scannerPreview",
-            { verbose: false }
-          );
-
-          await scanner.start(
-            { facingMode: "environment" },
-            {
-              fps: 10,
-              qrbox: {
-                width: 220,
-                height: 220
-              }
-            },
-            scanned,
-            () => {}
-          );
-
-          scanning = true;
-          status.textContent =
-            "Point the camera at an equipment QR code.";
-        } catch (error) {
-          status.textContent =
-            "Could not start camera. Allow camera access and ensure another app is not using it. " +
-            String(error?.message || error);
-
-          try {
-            scanner?.clear();
-          } catch (_) {}
-
-          scanner = null;
-        }
-      });
-
-      close.addEventListener("click", stopScanner);
-
-      manualBtn.addEventListener("click", () =>
-        scanned(manual.value)
-      );
-
-      manual.addEventListener("keydown", event => {
-        if (event.key === "Enter") scanned(manual.value);
-      });
-
-      window.addEventListener("pagehide", () => {
-        if (scanner && scanning) {
-          scanner.stop().catch(() => {});
-        }
-      }, { once: true });
-    }
-
-    // MAIN EQUIPMENT DASHBOARD
-    async function showDashboard() {
-      app.innerHTML = `
+    code=url.searchParams.get("code")||"";
+    state=url.searchParams.get("state")||"";
+    equipment=url.searchParams.get("equipment")||"";
+  } catch(_) {
+    // Treat input as a plain equipment code.
+  }
+
+  const info=parseCode(code,state,equipment);
+  if(!info) return null;
+
+  return {code:info.equipmentCode,state,equipment};
+}
+
+function openEquipment(info) {
+  const url=new URL(location.pathname,location.origin);
+  url.searchParams.set("code",info.code);
+
+  if(info.state) url.searchParams.set("state",info.state);
+  if(info.equipment) url.searchParams.set("equipment",info.equipment);
+
+  location.assign(url.toString());
+}
+
+// EQUIPMENT HISTORY
+function getHistory(rows,code) {
+  return rows.filter(row=>
+    String(row.equipmentCode||"")
+      .trim().toLowerCase()===code.toLowerCase()
+  );
+}
+
+function latestByCode(rows) {
+  const map=new Map();
+
+  for(const row of rows) {
+    const code=String(row.equipmentCode||"")
+      .trim().toLowerCase();
+
+    if(code) map.set(code,row);
+  }
+
+  return [...map.values()].reverse();
+}
+
+function renderHistory(container,code,history) {
+  container.replaceChildren();
+
+  const heading=el("div","","row");
+  heading.append(el("strong","Scan History — "+code));
+
+  const close=el("button","Close","secondary");
+  close.onclick=()=>container.hidden=true;
+  heading.append(close);
+
+  container.append(heading);
+
+  if(!history.length) {
+    container.append(el("p","No saved history."));
+    container.hidden=false;
+    return;
+  }
+
+  container.append(
+    el("p",history.length+" saved assignment(s)","pill")
+  );
+
+  const wrap=el("div","","tablewrap");
+  const table=el("table");
+  const head=el("thead");
+  const tr=el("tr");
+
+  ["Site","State","Logged At"].forEach(name=>
+    tr.append(el("th",name))
+  );
+
+  head.append(tr);
+  table.append(head);
+
+  const body=el("tbody");
+
+  [...history].reverse().forEach((row,index)=>{
+    const tr=el("tr");
+
+    [
+      row.site,
+      row.state,
+      formatDate(row.timestamp)
+    ].forEach(value=>tr.append(el("td",String(value||""))));
+
+    if(index===0) tr.style.fontWeight="600";
+    body.append(tr);
+  });
+
+  table.append(body);
+  wrap.append(table);
+  container.append(wrap);
+  container.hidden=false;
+}
+
+// DASHBOARD
+async function showDashboard() {
+  app.innerHTML=`
+    <div class="row" style="margin-bottom:20px">
+      <div>
         <h1>Equipment Site Log</h1>
-        <p class="sub">
+        <p class="sub" style="margin-bottom:0">
           Latest equipment locations and complete scan history.
         </p>
+      </div>
 
-        <section class="card scanner-panel">
-          <div class="row">
-            <div>
-              <strong>Scan equipment QR code</strong>
-              <div class="pill">
-                Scan another item using a phone or laptop camera.
-              </div>
-            </div>
-            <button type="button" id="openScanner">
-              Scan with Camera
-            </button>
-          </div>
+      <a class="button-link" href="?view=add">
+        + Add New Equipment
+      </a>
+    </div>
 
-          <div id="cameraPanel" hidden>
-            <div id="scannerPreview"
-                 class="scanner-preview"></div>
+    <section class="card">
+      <div class="pill" id="count">Loading entries...</div>
 
-            <p class="scanner-status"
-               id="cameraStatus"
-               role="status" aria-live="polite"></p>
+      <div class="grid2">
+        <div>
+          <label for="stateFilter">Filter by state</label>
+          <select id="stateFilter">
+            <option value="">All states</option>
+          </select>
+        </div>
 
-            <div class="scanner-buttons">
-              <button class="secondary"
-                      id="closeScanner"
-                      type="button">
-                Close camera
-              </button>
-            </div>
-          </div>
+        <div>
+          <label for="search">Search site or equipment</label>
+          <input id="search" type="search"
+                 placeholder="Search entries...">
+        </div>
+      </div>
 
-          <label for="manualQR">
-            Or enter an equipment code / QR URL
-          </label>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Equipment Code</th>
+              <th>State</th>
+              <th>Site</th>
+              <th>Equipment Name</th>
+              <th>Logged At</th>
+            </tr>
+          </thead>
 
-          <div class="row">
-            <input id="manualQR"
-                   style="flex:1;min-width:180px"
-                   placeholder="vic_vac_001 or QR URL"
-                   autocomplete="off">
-            <button id="manualQRBtn" type="button">
-              Open code
-            </button>
-          </div>
+          <tbody id="rows">
+            <tr>
+              <td colspan="5" class="empty">Loading...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-          <p class="camera-help">
-            Only Le Parfait equipment QR codes are accepted.
-            Camera access requires HTTPS and permission.
-          </p>
-        </section>
+      <div id="historyPanel"
+           class="history-panel" hidden></div>
 
-        <section class="card">
-          <div class="pill" id="count">Loading entries…</div>
+      <div class="bottom-actions">
+        <div class="actions">
+          <button id="refreshBtn" class="secondary">
+            Refresh
+          </button>
+          <button id="exportBtn" disabled>
+            Export to Excel
+          </button>
+        </div>
+      </div>
 
-          <div class="grid2">
-            <div>
-              <label for="stateFilter">
-                Filter by state
-              </label>
-              <select id="stateFilter">
-                <option value="">All states</option>
-              </select>
-            </div>
+      <div id="dashboardNotice" hidden></div>
+    </section>
 
-            <div>
-              <label for="search">
-                Search site or equipment
-              </label>
-              <input id="search"
-                     placeholder="Search entries…"
-                     type="search">
-            </div>
-          </div>
+    <p class="footer">
+      Each equipment item appears once at its latest saved site.
+      Click an equipment code to view its complete history.
+    </p>
+  `;
 
-          <div class="tablewrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Equipment Code</th>
-                  <th>State</th>
-                  <th>Site</th>
-                  <th>Equipment Name</th>
-                  <th>Logged At</th>
-                </tr>
-              </thead>
-              <tbody id="rows">
-                <tr>
-                  <td class="empty" colspan="5">
-                    Loading…
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+  const stateFilter=document.getElementById("stateFilter");
+  const search=document.getElementById("search");
+  const tableBody=document.getElementById("rows");
+  const count=document.getElementById("count");
+  const historyPanel=document.getElementById("historyPanel");
+  const refreshBtn=document.getElementById("refreshBtn");
+  const exportBtn=document.getElementById("exportBtn");
+  const errorBox=document.getElementById("dashboardNotice");
 
-          <div id="historyPanel"
-               class="history-panel"
-               hidden></div>
+  Object.values(STATES).forEach(state=>{
+    const option=el("option",state);
+    option.value=state;
+    stateFilter.append(option);
+  });
 
-          <div class="row bottom-actions">
-            <div class="actions">
-              <button class="secondary"
-                      id="refreshBtn"
-                      type="button">
-                Refresh
-              </button>
-              <button id="exportBtn"
-                      type="button"
-                      disabled>
-                Export to Excel
-              </button>
-            </div>
-          </div>
+  let records=[];
+  let loaded=false;
 
-          <div id="notice" hidden
-               role="status"
-               aria-live="polite"></div>
-        </section>
+  function filtered() {
+    const state=stateFilter.value;
+    const term=search.value.trim().toLowerCase();
 
-        <p class="footer">
-          Each equipment is displayed once at its latest saved site.
-          Click its code to see every recorded scan and previous site.
+    return latestByCode(records).filter(row=>
+      (!state||row.state===state) &&
+      (!term||[
+        row.equipmentCode,
+        row.site,
+        row.equipmentName,
+        row.state
+      ].some(value=>
+        String(value||"").toLowerCase().includes(term)
+      ))
+    );
+  }
+
+  function repaint() {
+    const selected=filtered();
+    const total=latestByCode(records).length;
+
+    count.textContent=
+      `${selected.length} of ${total} equipment items `+
+      `(${records.length} total saved assignments)`;
+
+    tableBody.replaceChildren();
+
+    if(!selected.length) {
+      const tr=el("tr");
+      const td=el("td","No equipment entries found.","empty");
+      td.colSpan=5;
+      tr.append(td);
+      tableBody.append(tr);
+    }
+
+    selected.forEach(row=>{
+      const tr=el("tr");
+      const codeCell=el("td");
+
+      const codeBtn=el(
+        "button",
+        String(row.equipmentCode||""),
+        "code-link"
+      );
+
+      codeBtn.onclick=()=>{
+        renderHistory(
+          historyPanel,
+          String(row.equipmentCode),
+          getHistory(records,String(row.equipmentCode))
+        );
+        historyPanel.scrollIntoView({
+          behavior:"smooth",
+          block:"nearest"
+        });
+      };
+
+      codeCell.append(codeBtn);
+      tr.append(codeCell);
+
+      [
+        row.state,
+        row.site,
+        row.equipmentName,
+        formatDate(row.timestamp)
+      ].forEach(value=>tr.append(el("td",String(value??""))));
+
+      tableBody.append(tr);
+    });
+
+    exportBtn.disabled=!loaded||!selected.length;
+  }
+
+  async function refresh() {
+    refreshBtn.disabled=true;
+    count.textContent="Loading entries...";
+    historyPanel.hidden=true;
+    errorBox.hidden=true;
+    loaded=false;
+
+    try {
+      const response=await getJSON("logs");
+
+      if(!Array.isArray(response.rows)) {
+        throw new Error("Unexpected spreadsheet response");
+      }
+
+      records=response.rows;
+      loaded=true;
+      repaint();
+    } catch(error) {
+      records=[];
+      repaint();
+      notice(
+        errorBox,
+        "Could not load Google Sheets entries: "+error.message,
+        "error"
+      );
+    } finally {
+      refreshBtn.disabled=false;
+    }
+  }
+
+  stateFilter.onchange=repaint;
+  search.oninput=repaint;
+  refreshBtn.onclick=refresh;
+
+  exportBtn.onclick=()=>{
+    if(typeof XLSX==="undefined") {
+      notice(errorBox,"Excel library unavailable.","error");
+      return;
+    }
+
+    const data=filtered().map(row=>({
+      "Equipment Code":row.equipmentCode,
+      "State":row.state,
+      "Site":row.site,
+      "Equipment Name":row.equipmentName,
+      "Logged At":formatDate(row.timestamp)
+    }));
+
+    const worksheet=XLSX.utils.json_to_sheet(data);
+    const workbook=XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      "Current Equipment"
+    );
+
+    XLSX.writeFile(
+      workbook,
+      "le_parfait_equipment_log.xlsx"
+    );
+  };
+
+  await refresh();
+}
+
+// SEPARATE ADD NEW EQUIPMENT VIEW
+function showAddEquipment() {
+  app.innerHTML=`
+    <div class="row" style="margin-bottom:20px">
+      <div>
+        <h1>Add New Equipment</h1>
+        <p class="sub" style="margin-bottom:0">
+          Scan a QR code or enter an equipment code to assign a site.
         </p>
-      `;
+      </div>
 
-      setupCameraScanner();
+      <a href="./" class="button-link secondary">
+        ← Back to Dashboard
+      </a>
+    </div>
 
-      const stateFilter =
-        document.getElementById("stateFilter");
+    <section class="card">
+      <div class="row">
+        <div>
+          <strong>Scan equipment QR code</strong>
+          <div class="pill">
+            Use your phone or laptop camera.
+          </div>
+        </div>
 
-      for (const state of Object.values(STATES)) {
-        stateFilter.append(
-          element("option", { value: state }, state)
-        );
+        <button id="openScanner">
+          Scan with Camera
+        </button>
+      </div>
+
+      <div id="cameraPanel" hidden>
+        <div id="scannerPreview"
+             class="scanner-preview"></div>
+
+        <p id="cameraStatus"
+           class="scanner-status"
+           role="status"></p>
+
+        <button id="closeScanner" class="secondary">
+          Close Camera
+        </button>
+      </div>
+
+      <label for="manualQR">
+        Or enter an equipment code / QR URL
+      </label>
+
+      <div class="row">
+        <input id="manualQR"
+               style="flex:1;min-width:180px"
+               placeholder="vic_vac_001 or QR URL"
+               autocomplete="off">
+
+        <button id="manualQRBtn">
+          Open Code
+        </button>
+      </div>
+
+      <div id="scannerMessage" hidden></div>
+
+      <p class="camera-help">
+        Scanning previously assigned equipment displays its current site.
+        Camera access requires HTTPS and permission.
+      </p>
+    </section>
+  `;
+
+  setupCameraScanner();
+}
+
+// CAMERA SCANNER
+function setupCameraScanner() {
+  const open=document.getElementById("openScanner");
+  const close=document.getElementById("closeScanner");
+  const panel=document.getElementById("cameraPanel");
+  const status=document.getElementById("cameraStatus");
+  const manual=document.getElementById("manualQR");
+  const manualBtn=document.getElementById("manualQRBtn");
+  const message=document.getElementById("scannerMessage");
+
+  let scanner=null;
+  let scanning=false;
+  let processing=false;
+
+  function scanResult(text) {
+    if(processing) return;
+
+    const result=resolveQR(text);
+
+    if(!result) {
+      notice(
+        message,
+        "Unrecognized QR code. Please scan a Le Parfait equipment code.",
+        "error"
+      );
+      return;
+    }
+
+    processing=true;
+
+    if(status) status.textContent="Equipment found...";
+
+    if(scanner&&scanning) {
+      scanner.stop()
+        .catch(()=>{})
+        .finally(()=>openEquipment(result));
+    } else {
+      openEquipment(result);
+    }
+  }
+
+  async function stopScanner() {
+    if(scanner&&scanning) {
+      try {await scanner.stop()} catch(_) {}
+      scanning=false;
+    }
+
+    try {scanner?.clear()} catch(_) {}
+
+    scanner=null;
+    panel.hidden=true;
+    open.hidden=false;
+  }
+
+  open.onclick=async()=>{
+    panel.hidden=false;
+    open.hidden=true;
+    message.hidden=true;
+    status.textContent="Requesting camera permission...";
+
+    if(!window.isSecureContext) {
+      status.textContent="Camera requires HTTPS.";
+      return;
+    }
+
+    if(typeof Html5Qrcode==="undefined") {
+      status.textContent="Scanner library unavailable.";
+      return;
+    }
+
+    try {
+      scanner=new Html5Qrcode(
+        "scannerPreview",
+        {verbose:false}
+      );
+
+      await scanner.start(
+        {facingMode:"environment"},
+        {
+          fps:10,
+          qrbox:{width:220,height:220}
+        },
+        scanResult,
+        ()=>{}
+      );
+
+      scanning=true;
+      status.textContent="Point the camera at an equipment QR code.";
+    } catch(error) {
+      status.textContent=
+        "Unable to start camera: "+String(error.message||error);
+
+      try {scanner?.clear()} catch(_) {}
+      scanner=null;
+    }
+  };
+
+  close.onclick=stopScanner;
+  manualBtn.onclick=()=>scanResult(manual.value);
+
+  manual.onkeydown=event=>{
+    if(event.key==="Enter") scanResult(manual.value);
+  };
+
+  window.addEventListener(
+    "pagehide",
+    ()=>{
+      if(scanner&&scanning) {
+        scanner.stop().catch(()=>{});
       }
+    },
+    {once:true}
+  );
+}
 
-      const count = document.getElementById("count");
-      const body = document.getElementById("rows");
-      const notice = document.getElementById("notice");
-      const exportBtn = document.getElementById("exportBtn");
-      const historyPanel = document.getElementById("historyPanel");
+// VERIFY A NEW SHEET RECORD
+async function verifySave(info,site,previousCount) {
+  for(let i=0;i<5;i++) {
+    if(i>0) await wait(1400);
 
-      let records = [];
-      let loaded = false;
+    try {
+      const data=await getJSON("logs");
+      if(!Array.isArray(data.rows)) continue;
 
-      // FILTER LATEST EQUIPMENT ASSIGNMENTS
-      function filtered() {
-        const state = stateFilter.value;
-        const term = document.getElementById("search")
-          .value.trim().toLowerCase();
+      const matches=data.rows.filter(row=>
+        String(row.equipmentCode||"").toLowerCase()===
+          info.equipmentCode &&
+        String(row.site||"").trim().toLowerCase()===
+          site.toLowerCase()
+      );
 
-        return latestByCode(records).filter(row =>
-          (!state || row.state === state) &&
-          (!term || [
-            row.site,
-            row.equipmentName,
-            row.equipmentCode,
-            row.state
-          ].some(value =>
-            String(value || "").toLowerCase().includes(term)
-          ))
-        );
+      if(matches.length>previousCount) return true;
+    } catch(_) {}
+  }
+
+  return false;
+}
+
+// EQUIPMENT SITE ASSIGNMENT FORM
+async function showScan() {
+  const info=parseCode(
+    params.get("code"),
+    params.get("state"),
+    params.get("equipment")
+  );
+
+  app.innerHTML=`
+    <h1>Log Equipment</h1>
+    <p class="sub">
+      View the equipment's current location or assign a new site.
+    </p>
+
+    <section class="card" id="scanCard"></section>
+
+    <a href="./">← Back to Dashboard</a>
+  `;
+
+  const card=document.getElementById("scanCard");
+
+  if(!info) {
+    card.textContent="Unrecognized equipment code.";
+    return;
+  }
+
+  card.innerHTML=`
+    <div class="pill">Equipment Code</div>
+    <div class="code" id="equipmentCode"></div>
+
+    <div class="grid2" style="margin-top:18px">
+      <div>
+        <div class="pill">State</div>
+        <strong id="equipmentState"></strong>
+      </div>
+
+      <div>
+        <div class="pill">Equipment</div>
+        <strong id="equipmentName"></strong>
+      </div>
+    </div>
+
+    <div class="current-site" id="currentSite">
+      Checking current assigned site...
+    </div>
+
+    <div class="history-panel" id="scanHistory" hidden></div>
+
+    <form id="logForm">
+      <label for="site">Site Name</label>
+
+      <input id="site"
+             name="site"
+             list="siteList"
+             maxlength="150"
+             autocomplete="off"
+             placeholder="Enter site name"
+             required>
+
+      <datalist id="siteList"></datalist>
+
+      <button class="full" id="submitBtn" type="submit">
+        Save Site Assignment
+      </button>
+    </form>
+
+    <div id="message" hidden></div>
+  `;
+
+  document.getElementById("equipmentCode").textContent=
+    info.equipmentCode;
+  document.getElementById("equipmentState").textContent=
+    info.state;
+  document.getElementById("equipmentName").textContent=
+    info.equipmentName;
+
+  const assignment=document.getElementById("currentSite");
+  const historyPanel=document.getElementById("scanHistory");
+  const form=document.getElementById("logForm");
+  const message=document.getElementById("message");
+  const button=document.getElementById("submitBtn");
+
+  let currentSite="";
+  let assignmentLoaded=false;
+  let history=[];
+
+  function displayAssignment() {
+    assignment.replaceChildren();
+
+    if(!history.length) {
+      assignment.append(
+        el("p","This equipment is not yet assigned.")
+      );
+      return;
+    }
+
+    const latest=history[history.length-1];
+
+    assignment.append(
+      el("span","Currently assigned to","pill"),
+      el("strong",String(latest.site||"")),
+      el(
+        "span",
+        "Last logged: "+formatDate(latest.timestamp),
+        "pill"
+      )
+    );
+
+    const historyBtn=el(
+      "button",
+      "View Scan History ("+history.length+")",
+      "secondary"
+    );
+
+    historyBtn.style.marginTop="12px";
+
+    historyBtn.onclick=()=>{
+      renderHistory(
+        historyPanel,
+        info.equipmentCode,
+        history
+      );
+    };
+
+    assignment.append(historyBtn);
+  }
+
+  try {
+    const data=await getJSON("logs");
+
+    if(!Array.isArray(data.rows)) {
+      throw new Error("Invalid response");
+    }
+
+    history=getHistory(data.rows,info.equipmentCode);
+    assignmentLoaded=true;
+
+    if(history.length) {
+      currentSite=String(
+        history[history.length-1].site||""
+      ).trim();
+
+      form.elements.site.value=currentSite;
+    }
+
+    displayAssignment();
+  } catch(error) {
+    assignment.textContent=
+      "Could not load current assignment: "+error.message;
+  }
+
+  getJSON("sites").then(data=>{
+    const list=document.getElementById("siteList");
+
+    for(const site of (data.sites||[])) {
+      if(typeof site==="string") {
+        const option=el("option");
+        option.value=site;
+        list.append(option);
       }
+    }
+  }).catch(()=>{});
 
-      // RENDER DASHBOARD TABLE
-      function repaint() {
-        const selected = filtered();
+  form.onsubmit=async event=>{
+    event.preventDefault();
 
-        count.textContent =
-          `${selected.length} of ${latestByCode(records).length} equipment items (${records.length} total scans)`;
+    const site=form.elements.site.value.trim();
 
-        body.replaceChildren();
+    if(!assignmentLoaded) {
+      notice(
+        message,
+        "Cannot verify the current assignment. Check the spreadsheet connection.",
+        "error"
+      );
+      return;
+    }
 
-        if (!selected.length) {
-          const tr = element("tr");
+    if(!site) return;
 
-          tr.append(
-            element(
-              "td",
-              { colspan: "5", class: "empty" },
-              "No equipment entries found."
-            )
-          );
+    if(
+      currentSite &&
+      currentSite.toLowerCase()===site.toLowerCase()
+    ) {
+      notice(
+        message,
+        "This equipment is already assigned to "+currentSite+
+        ". Enter another site to record a transfer.",
+        "info"
+      );
+      return;
+    }
 
-          body.append(tr);
-        }
+    button.disabled=true;
+    button.textContent="Submitting...";
+    message.hidden=true;
 
-        for (const row of selected) {
-          const tr = element("tr");
-          const codeCell = element("td");
+    try {
+      const previousData=await getJSON("logs");
+      const previousCount=previousData.rows.filter(row=>
+        String(row.equipmentCode||"").toLowerCase()===
+          info.equipmentCode &&
+        String(row.site||"").trim().toLowerCase()===
+          site.toLowerCase()
+      ).length;
 
-          // CLICK EQUIPMENT CODE TO VIEW ITS SCAN HISTORY
-          const codeButton = element(
-            "button",
-            { type: "button", class: "code-link" },
-            String(row.equipmentCode || "")
-          );
-
-          codeButton.addEventListener("click", () => {
-            renderHistory(
-              historyPanel,
-              String(row.equipmentCode),
-              getHistory(records, String(row.equipmentCode))
-            );
-
-            historyPanel.scrollIntoView({
-              behavior: "smooth",
-              block: "nearest"
-            });
-          });
-
-          codeCell.append(codeButton);
-          tr.append(codeCell);
-
-          for (const value of [
-            row.state,
-            row.site,
-            row.equipmentName,
-            formatDate(row.timestamp)
-          ]) {
-            tr.append(
-              element("td", {}, String(value ?? ""))
-            );
-          }
-
-          body.append(tr);
-        }
-
-        exportBtn.disabled = !loaded || !selected.length;
-      }
-
-      // REFRESH DATA FROM GOOGLE SHEETS
-      async function refresh() {
-        const refreshBtn =
-          document.getElementById("refreshBtn");
-
-        refreshBtn.disabled = true;
-        count.textContent = "Loading entries…";
-        notice.hidden = true;
-        historyPanel.hidden = true;
-        loaded = false;
-
-        try {
-          const response = await getJSON("logs");
-
-          if (!Array.isArray(response.rows)) {
-            throw new Error("Unexpected spreadsheet response");
-          }
-
-          records = response.rows;
-          loaded = true;
-          repaint();
-        } catch (error) {
-          records = [];
-          repaint();
-
-          setNotice(
-            notice,
-            "Could not load Google Sheets entries. Verify your Apps Script deployment and sheet name. Details: " +
-              error.message,
-            "error"
-          );
-        } finally {
-          refreshBtn.disabled = false;
-        }
-      }
-
-      stateFilter.addEventListener("change", repaint);
-
-      document.getElementById("search")
-        .addEventListener("input", repaint);
-
-      document.getElementById("refreshBtn")
-        .addEventListener("click", refresh);
-
-      // EXPORT CURRENT EQUIPMENT LOCATIONS TO EXCEL
-      exportBtn.addEventListener("click", () => {
-        if (typeof XLSX === "undefined") {
-          setNotice(
-            notice,
-            "Excel export library has not loaded. Check your connection and reload.",
-            "error"
-          );
-          return;
-        }
-
-        const rows = filtered().map(row => ({
-          "Equipment Code": row.equipmentCode,
-          State: row.state,
-          Site: row.site,
-          "Equipment Name": row.equipmentName,
-          "Logged At": formatDate(row.timestamp)
-        }));
-
-        const sheet = XLSX.utils.json_to_sheet(rows);
-        const book = XLSX.utils.book_new();
-
-        XLSX.utils.book_append_sheet(
-          book,
-          sheet,
-          "Current Equipment"
-        );
-
-        XLSX.writeFile(
-          book,
-          "le_parfait_equipment_log.xlsx"
-        );
+      await fetch(SCRIPT_URL,{
+        method:"POST",
+        mode:"no-cors",
+        headers:{
+          "Content-Type":"text/plain;charset=utf-8"
+        },
+        body:JSON.stringify({
+          state:info.state,
+          site,
+          equipmentName:info.equipmentName,
+          equipmentCode:info.equipmentCode
+        })
       });
 
-      await refresh();
-    }
+      button.textContent="Verifying...";
 
-    // INITIALIZE
-    if (rawCode !== null) {
-      showScan(rawCode);
-    } else {
-      showDashboard();
+      const verified=await verifySave(
+        info,
+        site,
+        previousCount
+      );
+
+      if(verified) {
+        currentSite=site;
+
+        const updated=await getJSON("logs");
+        history=getHistory(updated.rows,info.equipmentCode);
+
+        displayAssignment();
+
+        notice(
+          message,
+          "Equipment successfully assigned to "+site+".",
+          "ok"
+        );
+      } else {
+        notice(
+          message,
+          "Submission sent, but the spreadsheet could not be verified. Check Google Sheets before submitting again.",
+          "info"
+        );
+      }
+    } catch(error) {
+      notice(
+        message,
+        "Submission could not be completed: "+error.message,
+        "error"
+      );
+    } finally {
+      button.disabled=false;
+      button.textContent="Save Site Assignment";
     }
-  </script>
+  };
+}
+
+// APP ROUTING
+if(params.has("code")) {
+  showScan();
+} else if(params.get("view")==="add") {
+  showAddEquipment();
+} else {
+  showDashboard();
+}
+</script>
 </body>
 </html>
