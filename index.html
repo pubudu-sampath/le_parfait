@@ -171,7 +171,24 @@ th {color:var(--muted)}
 .notice.ok {background:var(--ok-bg);color:var(--ok)}
 .notice.error {background:var(--error-bg);color:var(--error)}
 .notice.info {background:var(--bg);color:var(--text)}
-.history-panel,.current-site {
+#historyDialog {
+  width:min(560px,calc(100vw - 32px));
+  padding:0;
+  border:1px solid var(--border);
+  border-radius:15px;
+  background:var(--card);
+  color:var(--text);
+}
+#historyDialog::backdrop {
+  background:rgba(26,18,12,.55);
+  backdrop-filter:blur(2px);
+}
+.modal-body {
+  padding:20px;
+  max-height:80vh;
+  overflow:auto;
+}
+.current-site {
   border:1px solid var(--border);
   background:var(--bg);
   border-radius:12px;
@@ -179,7 +196,7 @@ th {color:var(--muted)}
   margin-top:16px;
 }
 .current-site strong {display:block;margin-top:5px}
-.history-panel td,.history-panel th {white-space:normal}
+.modal-body td,.modal-body th {white-space:normal}
 .scanner-preview {
   width:100%;
   max-width:500px;
@@ -223,6 +240,10 @@ th {color:var(--muted)}
 
 <body>
 <button id="themeToggle" type="button"></button>
+
+<dialog id="historyDialog">
+  <div class="modal-body" id="historyBody"></div>
+</dialog>
 
 <main class="wrap" id="app">
   <h1>Equipment Sites Log</h1>
@@ -432,21 +453,29 @@ function latestByCode(rows) {
   return [...map.values()].reverse();
 }
 
-function renderHistory(container,code,history) {
+function renderHistory(code,history) {
+  const dialog=document.getElementById("historyDialog");
+  const container=document.getElementById("historyBody");
+
   container.replaceChildren();
 
   const heading=el("div","","row");
   heading.append(el("strong","Scan History — "+code));
 
   const close=el("button","Close","secondary");
-  close.onclick=()=>container.hidden=true;
+  close.onclick=()=>dialog.close();
   heading.append(close);
 
   container.append(heading);
 
+  // Clicking the backdrop closes it, the same as Esc does.
+  dialog.onclick=event=>{
+    if(event.target===dialog) dialog.close();
+  };
+
   if(!history.length) {
     container.append(el("p","No saved history."));
-    container.hidden=false;
+    openDialog(dialog);
     return;
   }
 
@@ -484,7 +513,18 @@ function renderHistory(container,code,history) {
   table.append(body);
   wrap.append(table);
   container.append(wrap);
-  container.hidden=false;
+  openDialog(dialog);
+}
+
+function openDialog(dialog) {
+  if(dialog.open) return;
+
+  if(typeof dialog.showModal==="function") {
+    dialog.showModal();
+  } else {
+    // Very old browsers without <dialog>: fall back to a plain panel.
+    dialog.setAttribute("open","");
+  }
 }
 
 // DASHBOARD
@@ -541,9 +581,6 @@ async function showDashboard() {
         </table>
       </div>
 
-      <div id="historyPanel"
-           class="history-panel" hidden></div>
-
       <div id="dashboardNotice" hidden></div>
     </section>
 
@@ -557,7 +594,6 @@ async function showDashboard() {
   const search=document.getElementById("search");
   const tableBody=document.getElementById("rows");
   const count=document.getElementById("count");
-  const historyPanel=document.getElementById("historyPanel");
   const errorBox=document.getElementById("dashboardNotice");
 
   Object.values(STATES).forEach(state=>{
@@ -615,14 +651,9 @@ async function showDashboard() {
 
       codeBtn.onclick=()=>{
         renderHistory(
-          historyPanel,
           String(row.equipmentCode),
           getHistory(records,String(row.equipmentCode))
         );
-        historyPanel.scrollIntoView({
-          behavior:"smooth",
-          block:"nearest"
-        });
       };
 
       codeCell.append(codeBtn);
@@ -641,7 +672,6 @@ async function showDashboard() {
 
   async function refresh() {
     count.textContent="Loading entries...";
-    historyPanel.hidden=true;
     errorBox.hidden=true;
 
     try {
@@ -924,8 +954,6 @@ async function showScan() {
       Checking current assigned site...
     </div>
 
-    <div class="history-panel" id="scanHistory" hidden></div>
-
     <form id="logForm">
       <label for="site">Site Name</label>
 
@@ -955,7 +983,6 @@ async function showScan() {
     info.equipmentName;
 
   const assignment=document.getElementById("currentSite");
-  const historyPanel=document.getElementById("scanHistory");
   const form=document.getElementById("logForm");
   const message=document.getElementById("message");
   const button=document.getElementById("submitBtn");
@@ -996,7 +1023,6 @@ async function showScan() {
 
     historyBtn.onclick=()=>{
       renderHistory(
-        historyPanel,
         info.equipmentCode,
         history
       );
