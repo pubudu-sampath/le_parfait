@@ -8,7 +8,7 @@
 
 <style>
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --bg:#f3ede1;
   --card:#fffdf8;
   --text:#2a2621;
@@ -21,21 +21,39 @@
   --error:#a8392c;
   --error-bg:#fae8e1;
 }
-@media(prefers-color-scheme:dark) {
-  :root {
-    --bg:#15171b;
-    --card:#1e2126;
-    --text:#e8eaed;
-    --muted:#a4aab4;
-    --border:#343942;
-    --accent:#4f8cff;
-    --accent-text:#0b1220;
-    --ok:#86efac;
-    --ok-bg:#103623;
-    --error:#fca5a5;
-    --error-bg:#451c22;
-  }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg:#15171b;
+  --card:#1e2126;
+  --text:#e8eaed;
+  --muted:#a4aab4;
+  --border:#343942;
+  --accent:#4f8cff;
+  --accent-text:#0b1220;
+  --ok:#86efac;
+  --ok-bg:#103623;
+  --error:#fca5a5;
+  --error-bg:#451c22;
 }
+#themeToggle {
+  position:fixed;
+  top:14px;
+  right:14px;
+  z-index:50;
+  width:40px;
+  height:40px;
+  padding:0;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  font-size:1.05rem;
+  line-height:1;
+  background:var(--card);
+  color:var(--text);
+  border:1px solid var(--border);
+  box-shadow:0 1px 3px rgba(0,0,0,.12);
+}
+.wrap h1 {padding-right:52px}
 * {box-sizing:border-box}
 [hidden] {display:none!important}
 body {
@@ -192,13 +210,58 @@ th {color:var(--muted)}
   .actions button {flex:1}
 }
 </style>
+
+<script>
+/* Resolve the theme before first paint: saved choice wins, else follow the device. */
+(function () {
+  var saved = null;
+  try {saved = localStorage.getItem("lp-theme")} catch (e) {}
+
+  var theme = (saved === "light" || saved === "dark")
+    ? saved
+    : (window.matchMedia &&
+       matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light");
+
+  document.documentElement.setAttribute("data-theme", theme);
+})();
+</script>
 </head>
 
 <body>
+<button id="themeToggle" type="button"></button>
+
 <main class="wrap" id="app">
   <h1>Equipment Sites Log</h1>
   <p class="sub">Loading...</p>
 </main>
+
+<script>
+/* Theme toggle: flips the theme and remembers the choice. */
+(function () {
+  var root = document.documentElement;
+  var button = document.getElementById("themeToggle");
+
+  function paint() {
+    var dark = root.getAttribute("data-theme") === "dark";
+    var label = dark ? "Switch to light theme" : "Switch to dark theme";
+
+    button.textContent = dark ? "☀" : "☾";
+    button.setAttribute("aria-label", label);
+    button.title = label;
+  }
+
+  button.addEventListener("click", function () {
+    var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+
+    root.setAttribute("data-theme", next);
+    try {localStorage.setItem("lp-theme", next)} catch (e) {}
+
+    paint();
+  });
+
+  paint();
+})();
+</script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
