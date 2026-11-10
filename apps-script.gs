@@ -271,6 +271,10 @@ function handleSite(payload) {
     return { success: true };
   }
 
+  if (op === "bulk") {
+    return bulkAddSites(sheet, payload.rows);
+  }
+
   var record = {
     id: trimmed(payload.id),
     site: trimmed(payload.site),
@@ -313,6 +317,73 @@ function handleSite(payload) {
   sheet.appendRow(line);
   SpreadsheetApp.flush();
   return { success: true, id: record.id };
+}
+
+/**
+ * Appends many sites in a single write. Rows whose site name is blank or
+ * already present are skipped rather than failing the whole import.
+ */
+function bulkAddSites(sheet, rows) {
+  if (!rows || !rows.length) throw new Error("No rows to import");
+  if (rows.length > 2000) throw new Error("Too many rows in one import (max 2000)");
+
+  var headers = sheet
+    .getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1))
+    .getValues()[0]
+    .map(normalise);
+
+  // Existing names, so a re-run of the same file doesn't duplicate everything.
+  var taken = {};
+  var existing = readSiteList();
+  for (var e = 0; e < existing.length; e++) {
+    taken[existing[e].site.toLowerCase()] = true;
+  }
+
+  var lines = [];
+  var skippedBlank = 0;
+  var skippedDuplicate = 0;
+
+  for (var i = 0; i < rows.length; i++) {
+    var record = {
+      id: Utilities.getUuid(),
+      site: trimmed(rows[i].site),
+      state: trimmed(rows[i].state).toUpperCase(),
+      supervisor: trimmed(rows[i].supervisor),
+      suburb: trimmed(rows[i].suburb),
+      operating: String(rows[i].operating).toLowerCase() === "no" ? "No" : "Yes",
+      remarks: trimmed(rows[i].remarks)
+    };
+
+    if (!record.site) { skippedBlank++; continue; }
+
+    var key = record.site.toLowerCase();
+    if (taken[key]) { skippedDuplicate++; continue; }
+    taken[key] = true;
+
+    var line = [];
+    for (var c = 0; c < headers.length; c++) {
+      var field = SITE_FIELD_BY_HEADER[headers[c]];
+      line.push(field ? record[field] : "");
+    }
+
+    lines.push(line);
+  }
+
+  if (lines.length) {
+    // One write for the whole batch - far cheaper than appendRow per row.
+    sheet
+      .getRange(sheet.getLastRow() + 1, 1, lines.length, headers.length)
+      .setValues(lines);
+
+    SpreadsheetApp.flush();
+  }
+
+  return {
+    success: true,
+    added: lines.length,
+    skippedBlank: skippedBlank,
+    skippedDuplicate: skippedDuplicate
+  };
 }
 
 /** 1-based sheet row for a site id, or -1. */
