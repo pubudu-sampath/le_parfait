@@ -2,10 +2,12 @@
  * Le Parfait - Equipment Sites Log
  * Google Apps Script backend for index.html
  *
- * Serves three things to the web page:
- *   GET  ?action=logs   -> { success: true, rows: [ {state, site, equipmentName, equipmentCode, timestamp}, ... ] }
- *   GET  ?action=sites  -> { success: true, sites: ["Kealba Hotel", ...] }
- *   POST {state, site, equipmentName, equipmentCode, timestamp} -> appends one row
+ * Serves the web page:
+ *   GET  ?action=logs      -> { success: true, rows: [ {state, site, equipmentName, equipmentCode, timestamp}, ... ] }
+ *   GET  ?action=sites     -> { success: true, sites: ["Kealba Hotel", ...] }
+ *   GET  ?action=sitelist  -> { success: true, sites: [ {id, site, state, supervisor, suburb, operating, remarks}, ... ] }
+ *   POST {state, site, equipmentName, equipmentCode, timestamp} -> appends one equipment row
+ *   POST {type:"site", op:"create"|"update"|"delete", ...}      -> maintains the Sites tab
  *
  * SETUP
  *   1. Put the new spreadsheet's ID in SHEET_ID below.
@@ -21,6 +23,32 @@
 var SHEET_ID = "PASTE_NEW_SPREADSHEET_ID_HERE";
 
 var SHEET_NAME = "Equipment Log";
+
+// Second tab in the SAME spreadsheet - one openById call serves both.
+var SITES_SHEET_NAME = "Sites";
+
+var SITE_HEADERS = [
+  "ID",
+  "Site Name",
+  "State",
+  "Supervisor",
+  "Suburb",
+  "Still Operating",
+  "Remarks"
+];
+
+// Maps a Sites header cell to the key the web page uses.
+var SITE_FIELD_BY_HEADER = {
+  "id": "id",
+  "site name": "site",
+  "site": "site",
+  "state": "state",
+  "supervisor": "supervisor",
+  "suburb": "suburb",
+  "still operating": "operating",
+  "operating": "operating",
+  "remarks": "remarks"
+};
 
 // Header row. Order can be changed in the sheet later - the script maps by
 // name, not by column position.
@@ -54,6 +82,10 @@ function doGet(e) {
       return json({ success: true, sites: readSites() });
     }
 
+    if (action === "sitelist") {
+      return json({ success: true, sites: readSiteList() });
+    }
+
     return json({ success: true, rows: readRows() });
   } catch (err) {
     return json({ success: false, message: String(err && err.message || err) });
@@ -69,6 +101,12 @@ function doPost(e) {
     }
 
     var payload = JSON.parse(e.postData.contents);
+
+    // Site records go through the same endpoint, tagged by type.
+    if (payload && payload.type === "site") {
+      lock.waitLock(20000);
+      return json(handleSite(payload));
+    }
 
     var entry = {
       state: trimmed(payload.state),
@@ -173,6 +211,148 @@ function readSites() {
 }
 
 /* ------------------------------------------------------------------ */
+/* Sites tab                                                           */
+/* ------------------------------------------------------------------ */
+
+function readSiteList() {
+  var sheet = getSitesSheet();
+  var values = sheet.getDataRange().getValues();
+
+  if (values.length < 2) return [];
+
+  var headers = values[0].map(normalise);
+  var out = [];
+
+  for (var r = 1; r < values.length; r++) {
+    var row = {
+      id: "", site: "", state: "", supervisor: "",
+      suburb: "", operating: "", remarks: ""
+    };
+
+    for (var c = 0; c < headers.length; c++) {
+      var field = SITE_FIELD_BY_HEADER[headers[c]];
+      if (!field) continue;
+
+      var value = values[r][c];
+      if (value === "" || value === null) continue;
+
+      if (field === "operating") {
+        // Accept a checkbox, "yes"/"no", or TRUE/FALSE.
+        var text = String(value).trim().toLowerCase();
+        row.operating = (text === "true" || text === "yes" || value === true)
+          ? "Yes"
+          : "No";
+      } else {
+        row[field] = String(value).trim();
+      }
+    }
+
+    // A row with no site name is blank or a stray note - skip it.
+    if (row.site) {
+      if (!row.operating) row.operating = "Yes";
+      out.push(row);
+    }
+  }
+
+  return out;
+}
+
+/** create / update / delete one site. Returns the response body. */
+function handleSite(payload) {
+  var op = String(payload.op || "create").toLowerCase();
+  var sheet = getSitesSheet();
+
+  if (op === "delete") {
+    var rowNumber = findSiteRow(sheet, payload.id);
+    if (rowNumber < 0) throw new Error("That site no longer exists");
+
+    sheet.deleteRow(rowNumber);
+    SpreadsheetApp.flush();
+    return { success: true };
+  }
+
+  var record = {
+    id: trimmed(payload.id),
+    site: trimmed(payload.site),
+    state: trimmed(payload.state),
+    supervisor: trimmed(payload.supervisor),
+    suburb: trimmed(payload.suburb),
+    operating: String(payload.operating).toLowerCase() === "no" ? "No" : "Yes",
+    remarks: trimmed(payload.remarks)
+  };
+
+  if (!record.site) throw new Error("Site name is required");
+
+  var headers = sheet
+    .getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1))
+    .getValues()[0]
+    .map(normalise);
+
+  if (op === "update") {
+    var target = findSiteRow(sheet, record.id);
+    if (target < 0) throw new Error("That site no longer exists");
+
+    for (var c = 0; c < headers.length; c++) {
+      var field = SITE_FIELD_BY_HEADER[headers[c]];
+      if (!field || field === "id") continue;
+      sheet.getRange(target, c + 1).setValue(record[field]);
+    }
+
+    SpreadsheetApp.flush();
+    return { success: true, id: record.id };
+  }
+
+  record.id = Utilities.getUuid();
+
+  var line = [];
+  for (var i = 0; i < headers.length; i++) {
+    var key = SITE_FIELD_BY_HEADER[headers[i]];
+    line.push(key ? record[key] : "");
+  }
+
+  sheet.appendRow(line);
+  SpreadsheetApp.flush();
+  return { success: true, id: record.id };
+}
+
+/** 1-based sheet row for a site id, or -1. */
+function findSiteRow(sheet, id) {
+  var wanted = trimmed(id);
+  if (!wanted) return -1;
+
+  var values = sheet.getDataRange().getValues();
+  var headers = values[0].map(normalise);
+  var idColumn = -1;
+
+  for (var c = 0; c < headers.length; c++) {
+    if (SITE_FIELD_BY_HEADER[headers[c]] === "id") { idColumn = c; break; }
+  }
+
+  if (idColumn < 0) return -1;
+
+  for (var r = 1; r < values.length; r++) {
+    if (trimmed(values[r][idColumn]) === wanted) return r + 1;
+  }
+
+  return -1;
+}
+
+function getSitesSheet() {
+  var book = SpreadsheetApp.openById(SHEET_ID);
+  var sheet = book.getSheetByName(SITES_SHEET_NAME);
+
+  // Created on demand so an existing deployment keeps working.
+  if (!sheet) {
+    sheet = book.insertSheet(SITES_SHEET_NAME);
+    sheet.appendRow(SITE_HEADERS);
+    sheet.getRange(1, 1, 1, SITE_HEADERS.length).setFontWeight("bold");
+    sheet.setFrozenRows(1);
+  }
+
+  return sheet;
+}
+
+/* ------------------------------------------------------------------ */
 /* Helpers                                                             */
 /* ------------------------------------------------------------------ */
 
@@ -229,7 +409,10 @@ function setupSheet() {
     sheet.setFrozenRows(1);
   }
 
-  Logger.log('Ready: "%s" in "%s"', SHEET_NAME, book.getName());
+  getSitesSheet();
+
+  Logger.log('Ready: "%s" and "%s" in "%s"',
+    SHEET_NAME, SITES_SHEET_NAME, book.getName());
 }
 
 /** Optional: confirms reads work before you wire up the web page. */
