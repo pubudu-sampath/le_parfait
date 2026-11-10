@@ -279,8 +279,21 @@ th {color:var(--muted)}
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
   gap:12px;
+  margin-top:14px;
+  padding:14px;
+  border:1px solid var(--border);
+  border-radius:11px;
+  background:var(--bg);
 }
 .filters label {margin-top:0}
+.searchbar {
+  display:flex;
+  gap:8px;
+  flex:1 1 260px;
+  min-width:0;
+}
+.searchbar input {min-width:0}
+.searchbar button {flex:none;padding:12px 18px}
 .pager {
   display:flex;
   align-items:center;
@@ -1412,7 +1425,19 @@ async function showSitesList() {
 
 
     <section class="card">
-      <div class="filters">
+      <div class="row">
+        <div class="searchbar">
+          <input id="siteSearch" type="search"
+                 placeholder="Search site, supervisor or suburb">
+          <button id="searchBtn">Search</button>
+        </div>
+
+        <button class="secondary" id="toggleFilters" aria-expanded="false">
+          Sort &amp; Filter
+        </button>
+      </div>
+
+      <div class="filters" id="filterPanel" hidden>
         <div>
           <label for="fState">State</label>
           <select id="fState"><option value="">All states</option></select>
@@ -1429,16 +1454,11 @@ async function showSitesList() {
             <option value="No">No</option>
           </select>
         </div>
-        <div>
-          <label for="siteSearch">Search</label>
-          <input id="siteSearch" type="search"
-                 placeholder="Site, supervisor or suburb">
-        </div>
       </div>
 
       <div class="row" style="margin-top:16px">
         <div class="pill" id="siteCount">Loading sites...</div>
-        <button class="secondary" id="clearFilters" hidden>Clear filters</button>
+        <button class="secondary" id="clearFilters" hidden>Clear all</button>
       </div>
 
       <div class="tablewrap" style="margin-top:12px">
@@ -1491,11 +1511,16 @@ async function showSitesList() {
   const nextBtn=document.getElementById("nextPage");
   const pageLabel=document.getElementById("pageLabel");
 
+  const searchBtn=document.getElementById("searchBtn");
+  const toggleBtn=document.getElementById("toggleFilters");
+  const filterPanel=document.getElementById("filterPanel");
+
   let records=[];
   let page=1;
+  // Only updated on Search, so typing doesn't re-filter on every keystroke.
+  let term="";
 
   function filtered() {
-    const term=search.value.trim().toLowerCase();
     const state=stateFilter.value;
     const supervisor=supervisorFilter.value;
     const operating=operatingFilter.value;
@@ -1564,9 +1589,16 @@ async function showSitesList() {
         ? records.length+" site(s)"
         : selected.length+" of "+records.length+" site(s)";
 
-    const anyFilter=!!(stateFilter.value||supervisorFilter.value||
-      operatingFilter.value||search.value.trim());
-    clearBtn.hidden=!anyFilter;
+    const activeFilters=[stateFilter.value,supervisorFilter.value,
+      operatingFilter.value].filter(Boolean).length;
+
+    clearBtn.hidden=!(activeFilters||term);
+
+    // Show the count on the button so active filters aren't hidden when
+    // the panel is collapsed.
+    toggleBtn.textContent=activeFilters
+      ? "Sort & Filter ("+activeFilters+")"
+      : "Sort & Filter";
 
     if(!selected.length) {
       const tr=el("tr");
@@ -1988,7 +2020,32 @@ async function showSitesList() {
     control.onchange=()=>{ page=1; repaint(); };
   });
 
-  search.oninput=()=>{ page=1; repaint(); };
+  function runSearch() {
+    term=search.value.trim().toLowerCase();
+    page=1;
+    repaint();
+  }
+
+  searchBtn.onclick=runSearch;
+
+  search.onkeydown=event=>{
+    if(event.key==="Enter") {
+      event.preventDefault();
+      runSearch();
+    }
+  };
+
+  // Clearing the box with the native "x" should restore the full list.
+  search.onsearch=()=>{
+    if(!search.value.trim()&&term) runSearch();
+  };
+
+  toggleBtn.onclick=()=>{
+    const open=filterPanel.hidden;
+    filterPanel.hidden=!open;
+    toggleBtn.setAttribute("aria-expanded",String(open));
+  };
+
   pageSizeSelect.onchange=()=>{ page=1; repaint(); };
 
   prevBtn.onclick=()=>{ page--; repaint(); };
@@ -1999,6 +2056,7 @@ async function showSitesList() {
     supervisorFilter.value="";
     operatingFilter.value="";
     search.value="";
+    term="";
     page=1;
     repaint();
   };
