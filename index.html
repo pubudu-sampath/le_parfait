@@ -1549,15 +1549,26 @@ async function showSitesList() {
     });
   }
 
-  /** Rebuilds the supervisor choices from whatever is actually on the list. */
+  /**
+   * Supervisor choices follow the selected state: pick NSW and only the
+   * NSW supervisors are offered. With no state chosen, everyone is listed.
+   */
   function fillSupervisors() {
     const current=supervisorFilter.value;
+    const state=stateFilter.value;
 
-    // The roster, plus anyone on a record who isn't on it (imported data).
-    const roster=Object.values(SUPERVISORS).flat();
+    // The roster for the chosen state, plus anyone on a record in that
+    // state who isn't on it (imported data keeps its own names).
+    const roster=state
+      ? (SUPERVISORS[state]||[])
+      : Object.values(SUPERVISORS).flat();
+
+    const fromRecords=records
+      .filter(row=>!state||row.state===state)
+      .map(row=>row.supervisor);
 
     const names=roster
-      .concat(records.map(row=>row.supervisor))
+      .concat(fromRecords)
       .filter(name=>name)
       .filter((name,index,all)=>all.indexOf(name)===index)
       .sort((a,b)=>a.localeCompare(b));
@@ -2025,9 +2036,17 @@ async function showSitesList() {
   document.getElementById("addSiteBtn").onclick=()=>openSiteForm(null);
 
   // Any filter change returns to the first page, or you land on an empty one.
-  [stateFilter,supervisorFilter,operatingFilter].forEach(control=>{
+  [supervisorFilter,operatingFilter].forEach(control=>{
     control.onchange=()=>{ page=1; repaint(); };
   });
+
+  // Changing state narrows the supervisor list to that state's people. If the
+  // supervisor already chosen doesn't cover it, the choice falls back to All.
+  stateFilter.onchange=()=>{
+    fillSupervisors();
+    page=1;
+    repaint();
+  };
 
   function runSearch() {
     term=search.value.trim().toLowerCase();
