@@ -275,6 +275,33 @@ th {color:var(--muted)}
 .tag-off {background:var(--error-bg);color:var(--error)}
 .code-link.danger {color:var(--error);margin-left:12px}
 .actions {display:flex;gap:10px;flex-wrap:wrap}
+.filters {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:12px;
+}
+.filters label {margin-top:0}
+.pager {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin-top:16px;
+}
+.pager-size {
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+.pager-size label {margin:0;white-space:nowrap}
+.pager-size select {width:auto}
+.pager-nav {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.pager-nav button {padding:8px 14px;font-size:.86rem}
 .preview-list {
   max-height:230px;
   overflow:auto;
@@ -1376,14 +1403,36 @@ async function showSitesList() {
 
 
     <section class="card">
-      <div class="row">
-        <div class="pill" id="siteCount">Loading sites...</div>
-        <input id="siteSearch" type="search"
-               placeholder="Search site, supervisor or suburb"
-               style="max-width:280px">
+      <div class="filters">
+        <div>
+          <label for="fState">State</label>
+          <select id="fState"><option value="">All states</option></select>
+        </div>
+        <div>
+          <label for="fSupervisor">Supervisor</label>
+          <select id="fSupervisor"><option value="">All supervisors</option></select>
+        </div>
+        <div>
+          <label for="fOperating">Operating</label>
+          <select id="fOperating">
+            <option value="">All</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+        <div>
+          <label for="siteSearch">Search</label>
+          <input id="siteSearch" type="search"
+                 placeholder="Site, supervisor or suburb">
+        </div>
       </div>
 
-      <div class="tablewrap" style="margin-top:14px">
+      <div class="row" style="margin-top:16px">
+        <div class="pill" id="siteCount">Loading sites...</div>
+        <button class="secondary" id="clearFilters" hidden>Clear filters</button>
+      </div>
+
+      <div class="tablewrap" style="margin-top:12px">
         <table>
           <thead>
             <tr>
@@ -1395,6 +1444,25 @@ async function showSitesList() {
         </table>
       </div>
 
+      <div class="pager">
+        <div class="pager-size">
+          <label for="pageSize">Rows per page</label>
+          <select id="pageSize">
+            <option value="10">10</option>
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="all">All</option>
+          </select>
+        </div>
+
+        <div class="pager-nav">
+          <button class="secondary" id="prevPage">Previous</button>
+          <span class="pill" id="pageLabel"></span>
+          <button class="secondary" id="nextPage">Next</button>
+        </div>
+      </div>
+
       <div id="sitesNotice" hidden></div>
     </section>
   `;
@@ -1404,20 +1472,79 @@ async function showSitesList() {
   const search=document.getElementById("siteSearch");
   const errorBox=document.getElementById("sitesNotice");
 
+  const stateFilter=document.getElementById("fState");
+  const supervisorFilter=document.getElementById("fSupervisor");
+  const operatingFilter=document.getElementById("fOperating");
+  const clearBtn=document.getElementById("clearFilters");
+
+  const pageSizeSelect=document.getElementById("pageSize");
+  const prevBtn=document.getElementById("prevPage");
+  const nextBtn=document.getElementById("nextPage");
+  const pageLabel=document.getElementById("pageLabel");
+
   let records=[];
+  let page=1;
 
   function filtered() {
     const term=search.value.trim().toLowerCase();
-    if(!term) return records;
+    const state=stateFilter.value;
+    const supervisor=supervisorFilter.value;
+    const operating=operatingFilter.value;
 
-    return records.filter(row=>
-      [row.site,row.supervisor,row.suburb,row.state,row.remarks]
-        .join(" ").toLowerCase().includes(term)
-    );
+    return records.filter(row=>{
+      if(state&&row.state!==state) return false;
+      if(supervisor&&row.supervisor!==supervisor) return false;
+      if(operating&&(row.operating||"Yes")!==operating) return false;
+
+      if(term) {
+        const haystack=[row.site,row.supervisor,row.suburb,row.state,row.remarks]
+          .join(" ").toLowerCase();
+        if(!haystack.includes(term)) return false;
+      }
+
+      return true;
+    });
+  }
+
+  /** Rebuilds the supervisor choices from whatever is actually on the list. */
+  function fillSupervisors() {
+    const current=supervisorFilter.value;
+
+    const names=records
+      .map(row=>row.supervisor)
+      .filter(name=>name)
+      .filter((name,index,all)=>all.indexOf(name)===index)
+      .sort((a,b)=>a.localeCompare(b));
+
+    supervisorFilter.replaceChildren();
+
+    const any=el("option","All supervisors");
+    any.value="";
+    supervisorFilter.append(any);
+
+    names.forEach(name=>{
+      const option=el("option",name);
+      option.value=name;
+      supervisorFilter.append(option);
+    });
+
+    // Keep the chosen supervisor if they still exist after a refresh.
+    if(names.includes(current)) supervisorFilter.value=current;
   }
 
   function repaint() {
     const selected=filtered();
+    const size=pageSizeSelect.value==="all"
+      ? selected.length||1
+      : Number(pageSizeSelect.value);
+
+    const pages=Math.max(1,Math.ceil(selected.length/size));
+    if(page>pages) page=pages;
+    if(page<1) page=1;
+
+    const start=(page-1)*size;
+    const visible=selected.slice(start,start+size);
+
     tableBody.replaceChildren();
 
     countEl.textContent=
@@ -1425,42 +1552,55 @@ async function showSitesList() {
         ? records.length+" site(s)"
         : selected.length+" of "+records.length+" site(s)";
 
+    const anyFilter=!!(stateFilter.value||supervisorFilter.value||
+      operatingFilter.value||search.value.trim());
+    clearBtn.hidden=!anyFilter;
+
     if(!selected.length) {
       const tr=el("tr");
-      const td=el("td","No sites yet. Use Add Site to create one.","empty");
+      const td=el(
+        "td",
+        records.length
+          ? "No sites match these filters."
+          : "No sites yet. Use Add Site or Import from File.",
+        "empty"
+      );
       td.colSpan=7;
       tr.append(td);
       tableBody.append(tr);
-      return;
+    } else {
+      visible.forEach(row=>{
+        const tr=el("tr");
+
+        [row.site,row.state,row.supervisor,row.suburb]
+          .forEach(value=>tr.append(el("td",String(value||""))));
+
+        const status=el("td");
+        status.append(
+          el("span",row.operating||"Yes",
+            "tag "+((row.operating||"Yes")==="No"?"tag-off":"tag-on"))
+        );
+        tr.append(status);
+
+        tr.append(el("td",String(row.remarks||"")));
+
+        const actions=el("td");
+        const edit=el("button","Edit","code-link");
+        edit.onclick=()=>openSiteForm(row);
+        actions.append(edit);
+        tr.append(actions);
+
+        tableBody.append(tr);
+      });
     }
 
-    selected.forEach(row=>{
-      const tr=el("tr");
+    pageLabel.textContent=selected.length
+      ? "Showing "+(start+1)+"-"+Math.min(start+size,selected.length)+
+        " of "+selected.length
+      : "Nothing to show";
 
-      [row.site,row.state,row.supervisor,row.suburb]
-        .forEach(value=>tr.append(el("td",String(value||""))));
-
-      const status=el("td");
-      status.append(
-        el("span",row.operating||"Yes",
-          "tag "+((row.operating||"Yes")==="No"?"tag-off":"tag-on"))
-      );
-      tr.append(status);
-
-      tr.append(el("td",String(row.remarks||"")));
-
-      const actions=el("td");
-      const edit=el("button","Edit","code-link");
-      const remove=el("button","Delete","code-link danger");
-
-      edit.onclick=()=>openSiteForm(row);
-      remove.onclick=()=>confirmDeleteSite(row);
-
-      actions.append(edit,remove);
-      tr.append(actions);
-
-      tableBody.append(tr);
-    });
+    prevBtn.disabled=page<=1;
+    nextBtn.disabled=page>=pages;
   }
 
   async function refresh() {
@@ -1469,7 +1609,14 @@ async function showSitesList() {
 
     try {
       const data=await getJSON("sitelist");
-      records=data.sites||[];
+
+      // Alphabetical by site name, so the order never depends on the sheet.
+      records=(data.sites||[]).sort((a,b)=>
+        String(a.site||"").localeCompare(String(b.site||""),undefined,
+          {sensitivity:"base"})
+      );
+
+      fillSupervisors();
       repaint();
     } catch(error) {
       records=[];
@@ -1504,7 +1651,7 @@ async function showSitesList() {
             <label for="f_state">State</label>
             <select id="f_state"></select>
           </div>
-          <div>
+          <div${editing?"":' hidden'}>
             <label for="f_operating">Still operating</label>
             <select id="f_operating">
               <option value="Yes">Yes</option>
@@ -1592,53 +1739,6 @@ async function showSitesList() {
     openDialog(dialog);
   }
 
-  function confirmDeleteSite(row) {
-    const dialog=document.getElementById("historyDialog");
-    const body=document.getElementById("historyBody");
-
-    body.replaceChildren();
-    body.innerHTML=`
-      <div class="row">
-        <strong>Delete site</strong>
-        <button class="secondary" id="delCancel">Close</button>
-      </div>
-
-      <p class="sub" style="margin:14px 0 0">
-        Remove <strong>${escapeHTML(row.site)}</strong> from the sites list?
-        This cannot be undone. Equipment history is not affected.
-      </p>
-
-      <button class="full" id="delConfirm">Delete Site</button>
-      <div id="delNotice" hidden></div>
-    `;
-
-    document.getElementById("delCancel").onclick=()=>dialog.close();
-    dialog.onclick=event=>{
-      if(event.target===dialog) dialog.close();
-    };
-
-    document.getElementById("delConfirm").onclick=async()=>{
-      const button=document.getElementById("delConfirm");
-      button.disabled=true;
-      button.textContent="Deleting...";
-
-      try {
-        await postJSON({type:"site",op:"delete",id:row.id});
-        dialog.close();
-        await refresh();
-      } catch(error) {
-        notice(
-          document.getElementById("delNotice"),
-          "Could not delete: "+error.message,
-          "error"
-        );
-        button.disabled=false;
-        button.textContent="Delete Site";
-      }
-    };
-
-    openDialog(dialog);
-  }
 
   function openImportPreview(parsed,fileName) {
     const dialog=document.getElementById("historyDialog");
@@ -1837,7 +1937,32 @@ async function showSitesList() {
   };
 
   document.getElementById("addSiteBtn").onclick=()=>openSiteForm(null);
-  search.oninput=repaint;
+
+  // Any filter change returns to the first page, or you land on an empty one.
+  [stateFilter,supervisorFilter,operatingFilter].forEach(control=>{
+    control.onchange=()=>{ page=1; repaint(); };
+  });
+
+  search.oninput=()=>{ page=1; repaint(); };
+  pageSizeSelect.onchange=()=>{ page=1; repaint(); };
+
+  prevBtn.onclick=()=>{ page--; repaint(); };
+  nextBtn.onclick=()=>{ page++; repaint(); };
+
+  clearBtn.onclick=()=>{
+    stateFilter.value="";
+    supervisorFilter.value="";
+    operatingFilter.value="";
+    search.value="";
+    page=1;
+    repaint();
+  };
+
+  Object.values(STATES).forEach(state=>{
+    const option=el("option",state);
+    option.value=state;
+    stateFilter.append(option);
+  });
 
   await refresh();
 }
