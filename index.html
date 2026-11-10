@@ -418,6 +418,15 @@ th {color:var(--muted)}
 const SCRIPT_URL =
 "https://script.google.com/macros/s/AKfycbxrzrFXN-vuOITgKyJkg0E8yPbhfxGtQQZdgQnLHPRTJdAASNmGWq3zEoNG2ISGQf3m/exec";
 
+// Supervisors available in each state.
+const SUPERVISORS = {
+  VIC:["Dinesh","Anish"],
+  NSW:["Yomal","Charith","Uma"],
+  WA:["Janitha","Madushanka","MJ"],
+  QLD:["Maggie"],
+  ACT:["Shelly"]
+};
+
 const STATES = {
   vic:"VIC",
   wa:"WA",
@@ -1510,8 +1519,11 @@ async function showSitesList() {
   function fillSupervisors() {
     const current=supervisorFilter.value;
 
-    const names=records
-      .map(row=>row.supervisor)
+    // The roster, plus anyone on a record who isn't on it (imported data).
+    const roster=Object.values(SUPERVISORS).flat();
+
+    const names=roster
+      .concat(records.map(row=>row.supervisor))
       .filter(name=>name)
       .filter((name,index,all)=>all.indexOf(name)===index)
       .sort((a,b)=>a.localeCompare(b));
@@ -1663,8 +1675,7 @@ async function showSitesList() {
         <div class="grid2">
           <div>
             <label for="f_supervisor">Supervisor</label>
-            <input id="f_supervisor" maxlength="80"
-                   value="${escapeHTML(existing?existing.supervisor:"")}">
+            <select id="f_supervisor"></select>
           </div>
           <div>
             <label for="f_suburb">Suburb</label>
@@ -1686,6 +1697,8 @@ async function showSitesList() {
     `;
 
     const stateSelect=document.getElementById("f_state");
+    const supervisorSelect=document.getElementById("f_supervisor");
+
     Object.values(STATES).forEach(state=>{
       const option=el("option",state);
       option.value=state;
@@ -1693,6 +1706,38 @@ async function showSitesList() {
     });
 
     if(existing&&existing.state) stateSelect.value=existing.state;
+
+    /** Supervisors depend on the state, so this reruns whenever it changes. */
+    function fillSupervisorChoices(keep) {
+      const forState=SUPERVISORS[stateSelect.value]||[];
+      supervisorSelect.replaceChildren();
+
+      const blank=el("option","Not assigned");
+      blank.value="";
+      supervisorSelect.append(blank);
+
+      forState.forEach(name=>{
+        const option=el("option",name);
+        option.value=name;
+        supervisorSelect.append(option);
+      });
+
+      // A name already on the record but not in the roster (or belonging to
+      // another state) stays selectable, so editing never silently drops it.
+      if(keep&&!forState.includes(keep)) {
+        const option=el("option",keep+" (not in "+stateSelect.value+")");
+        option.value=keep;
+        supervisorSelect.append(option);
+      }
+
+      // Safe either way: an off-roster name has just been added as an option.
+      supervisorSelect.value=keep||"";
+    }
+
+    fillSupervisorChoices(existing?existing.supervisor:"");
+
+    stateSelect.onchange=()=>fillSupervisorChoices(supervisorSelect.value);
+
     if(existing&&existing.operating) {
       document.getElementById("f_operating").value=existing.operating;
     }
@@ -1714,7 +1759,7 @@ async function showSitesList() {
         id:editing?existing.id:"",
         site:document.getElementById("f_site").value.trim(),
         state:stateSelect.value,
-        supervisor:document.getElementById("f_supervisor").value.trim(),
+        supervisor:supervisorSelect.value.trim(),
         suburb:document.getElementById("f_suburb").value.trim(),
         operating:document.getElementById("f_operating").value,
         remarks:document.getElementById("f_remarks").value.trim()
