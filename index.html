@@ -274,6 +274,19 @@ th {color:var(--muted)}
 .tag-on {background:var(--ok-bg);color:var(--ok)}
 .tag-off {background:var(--error-bg);color:var(--error)}
 .code-link.danger {color:var(--error);margin-left:12px}
+.actions {display:flex;gap:10px;flex-wrap:wrap}
+.preview-list {
+  max-height:230px;
+  overflow:auto;
+  border:1px solid var(--border);
+  border-radius:10px;
+  margin-top:12px;
+}
+.preview-list table {font-size:.8rem}
+@media(max-width:760px) {
+  .actions {width:100%}
+  .actions button {flex:1}
+}
 .scanner-preview {
   width:100%;
   max-width:500px;
@@ -1352,8 +1365,15 @@ async function showSitesList() {
         </p>
       </div>
 
-      <button id="addSiteBtn">+ Add Site</button>
+      <div class="actions">
+        <button class="secondary" id="importBtn">Import from File</button>
+        <button id="addSiteBtn">+ Add Site</button>
+      </div>
     </div>
+
+    <input id="importFile" type="file" hidden
+           accept=".xlsx,.xls,.csv,text/csv">
+
 
     <section class="card">
       <div class="row">
@@ -1619,6 +1639,202 @@ async function showSitesList() {
 
     openDialog(dialog);
   }
+
+  function openImportPreview(parsed,fileName) {
+    const dialog=document.getElementById("historyDialog");
+    const body=document.getElementById("historyBody");
+
+    const usable=parsed.filter(row=>row.site);
+    const sample=usable.slice(0,25);
+
+    body.replaceChildren();
+    body.innerHTML=`
+      <div class="row">
+        <strong>Import sites</strong>
+        <button class="secondary" id="impCancel">Close</button>
+      </div>
+
+      <p class="sub" style="margin:12px 0 0">
+        <strong>${escapeHTML(fileName)}</strong> &mdash;
+        ${usable.length} site(s) ready to import${
+          parsed.length-usable.length
+            ? ", "+(parsed.length-usable.length)+" row(s) skipped with no site name"
+            : ""
+        }.
+        Sites already on the list are skipped automatically.
+      </p>
+
+      <div class="preview-list">
+        <table>
+          <thead><tr>
+            <th>Site Name</th><th>State</th><th>Supervisor</th>
+            <th>Suburb</th><th>Operating</th>
+          </tr></thead>
+          <tbody>
+            ${sample.map(row=>`<tr>
+              <td>${escapeHTML(row.site)}</td>
+              <td>${escapeHTML(row.state)}</td>
+              <td>${escapeHTML(row.supervisor)}</td>
+              <td>${escapeHTML(row.suburb)}</td>
+              <td>${escapeHTML(row.operating)}</td>
+            </tr>`).join("")}
+          </tbody>
+        </table>
+      </div>
+
+      ${usable.length>sample.length
+        ? `<p class="pill" style="margin-top:8px">Showing the first ${sample.length}.</p>`
+        : ""}
+
+      <button class="full" id="impConfirm"${usable.length?"":" disabled"}>
+        Import ${usable.length} Site(s)
+      </button>
+
+      <div id="impNotice" hidden></div>
+    `;
+
+    document.getElementById("impCancel").onclick=()=>dialog.close();
+    dialog.onclick=event=>{
+      if(event.target===dialog) dialog.close();
+    };
+
+    document.getElementById("impConfirm").onclick=async()=>{
+      const button=document.getElementById("impConfirm");
+      button.disabled=true;
+      button.textContent="Importing...";
+
+      try {
+        const result=await postJSON({
+          type:"site",
+          op:"bulk",
+          rows:usable
+        });
+
+        dialog.close();
+        await refresh();
+
+        const parts=[result.added+" site(s) imported"];
+        if(result.skippedDuplicate) {
+          parts.push(result.skippedDuplicate+" already on the list");
+        }
+        if(result.skippedBlank) {
+          parts.push(result.skippedBlank+" row(s) had no site name");
+        }
+
+        notice(errorBox,parts.join(", ")+".","ok");
+      } catch(error) {
+        notice(
+          document.getElementById("impNotice"),
+          "Import failed: "+error.message,
+          "error"
+        );
+        button.disabled=false;
+        button.textContent="Import "+usable.length+" Site(s)";
+      }
+    };
+
+    openDialog(dialog);
+  }
+
+  /* The spreadsheet parser is ~400KB, so it is only fetched if someone
+     actually imports a file. */
+  function loadSheetLibrary() {
+    if(window.XLSX) return Promise.resolve();
+
+    if(!window.__xlsxLoading) {
+      window.__xlsxLoading=new Promise((resolve,reject)=>{
+        const tag=document.createElement("script");
+        tag.src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+        tag.onload=resolve;
+        tag.onerror=()=>reject(new Error("could not load the spreadsheet reader"));
+        document.head.append(tag);
+      });
+    }
+
+    return window.__xlsxLoading;
+  }
+
+  // Accepts "Site Name" / "site", "Still Operating" / "operating", etc.
+  const IMPORT_FIELDS={
+    site:["site name","site","name"],
+    state:["state"],
+    supervisor:["supervisor","supervisor assigned","manager"],
+    suburb:["suburb","location"],
+    operating:["still operating","operating","active","status"],
+    remarks:["remarks","notes","comment","comments"]
+  };
+
+  function mapImportRow(raw) {
+    const lower={};
+    Object.keys(raw).forEach(key=>{
+      lower[String(key).trim().toLowerCase()]=raw[key];
+    });
+
+    const pick=names=>{
+      for(const name of names) {
+        if(lower[name]!==undefined&&lower[name]!==null) {
+          return String(lower[name]).trim();
+        }
+      }
+      return "";
+    };
+
+    const operatingRaw=pick(IMPORT_FIELDS.operating).toLowerCase();
+
+    return {
+      site:pick(IMPORT_FIELDS.site),
+      state:pick(IMPORT_FIELDS.state).toUpperCase(),
+      supervisor:pick(IMPORT_FIELDS.supervisor),
+      suburb:pick(IMPORT_FIELDS.suburb),
+      // Anything explicitly negative is No; blank defaults to Yes.
+      operating:["no","n","false","0","closed","inactive"].includes(operatingRaw)
+        ? "No"
+        : "Yes",
+      remarks:pick(IMPORT_FIELDS.remarks)
+    };
+  }
+
+  const fileInput=document.getElementById("importFile");
+
+  document.getElementById("importBtn").onclick=()=>fileInput.click();
+
+  fileInput.onchange=async()=>{
+    const file=fileInput.files&&fileInput.files[0];
+    if(!file) return;
+
+    errorBox.hidden=true;
+
+    try {
+      await loadSheetLibrary();
+
+      const buffer=await file.arrayBuffer();
+      const book=XLSX.read(buffer,{type:"array"});
+      const first=book.Sheets[book.SheetNames[0]];
+
+      if(!first) throw new Error("that file has no sheets");
+
+      const raw=XLSX.utils.sheet_to_json(first,{defval:""});
+
+      if(!raw.length) {
+        throw new Error("no rows found below the header row");
+      }
+
+      const parsed=raw.map(mapImportRow);
+
+      if(!parsed.some(row=>row.site)) {
+        throw new Error(
+          'no "Site Name" column found - the first row must be headers'
+        );
+      }
+
+      openImportPreview(parsed,file.name);
+    } catch(error) {
+      notice(errorBox,"Could not read that file: "+error.message,"error");
+    } finally {
+      // Let the same file be chosen again after a correction.
+      fileInput.value="";
+    }
+  };
 
   document.getElementById("addSiteBtn").onclick=()=>openSiteForm(null);
   search.oninput=repaint;
